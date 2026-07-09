@@ -1,0 +1,1650 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<link rel="manifest" href="manifest.json">
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js');
+  }
+</script><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NADIR ENTERPRISE - Transport Management System</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;500;600;700&family=Exo+2:wght@100;300;400;600;700;900&family=Audiowide&family=Bungee&family=Teko:wght@300;400;600;700&family=Russo+One&family=Black+Ops+One&family=Michroma&family=Saira+Stencil+One&family=Quantico:wght@400;700&family=Chakra+Petch:wght@300;400;600;700&family=Jura:wght@300;400;600;700&family=Oxanium:wght@200;400;600;700;800&family=Aldrich&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<style>
+:root {
+  --bg-gradient: linear-gradient(135deg, #0a1a0f 0%, #0d2818 40%, #071510 100%);
+  --accent: #00e676;
+  --accent-dim: rgba(0,230,118,0.15);
+  --accent-glow: rgba(0,230,118,0.4);
+  --glass-bg: rgba(10,30,18,0.65);
+  --glass-border: rgba(0,230,118,0.18);
+  --text-primary: #e8f5e9;
+  --text-secondary: #a5d6a7;
+  --text-muted: #5a8a6a;
+  --danger: #ff5252;
+  --warning: #ffc107;
+  --info: #00bcd4;
+  --card-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  --font-family: 'Rajdhani', sans-serif;
+  --radius: 14px;
+  --sidebar-w: 240px;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{font-family:var(--font-family);background:var(--bg-gradient);color:var(--text-primary);min-height:100vh;overflow-x:hidden;transition:background .6s,color .4s,font-family .3s;}
+::-webkit-scrollbar{width:6px;height:6px;}
+::-webkit-scrollbar-track{background:rgba(0,0,0,.2);}
+::-webkit-scrollbar-thumb{background:var(--accent);border-radius:3px;}
+
+#splash{position:fixed;inset:0;z-index:10000;background:radial-gradient(ellipse at center,#0d2818 0%,#050e09 70%,#000 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity .8s ease,transform .8s ease;}
+#splash.hide{opacity:0;transform:scale(1.1);pointer-events:none;}
+#splash .logo-ring{width:140px;height:140px;border-radius:50%;border:3px solid transparent;border-top-color:var(--accent);border-right-color:var(--accent);animation:spinRing 1.2s linear infinite;position:absolute;}
+#splash .logo-ring2{width:110px;height:110px;border-radius:50%;border:2px solid transparent;border-bottom-color:#ffc107;border-left-color:#ffc107;animation:spinRing .9s linear infinite reverse;position:absolute;}
+@keyframes spinRing{to{transform:rotate(360deg);}}
+#splash .splash-icon{font-size:48px;color:var(--accent);z-index:2;animation:pulseIcon 1.5s ease-in-out infinite;}
+@keyframes pulseIcon{0%,100%{transform:scale(1);opacity:1;}50%{transform:scale(1.15);opacity:.8;}}
+#splash h1{font-family:'Orbitron',sans-serif;font-size:clamp(22px,4vw,42px);font-weight:900;background:linear-gradient(90deg,var(--accent),#ffc107,var(--accent));background-size:200% auto;-webkit-background-clip:text;-webkit-text-fill-color:transparent;animation:shimmerText 2s linear infinite;margin-top:100px;text-align:center;letter-spacing:2px;}
+@keyframes shimmerText{to{background-position:200% center;}}
+#splash h2{font-family:'Rajdhani',sans-serif;font-size:clamp(14px,2.5vw,22px);font-weight:300;color:var(--text-secondary);letter-spacing:6px;text-transform:uppercase;margin-top:12px;animation:fadeSlideUp 1s ease .5s both;}
+@keyframes fadeSlideUp{from{opacity:0;transform:translateY(30px);}to{opacity:1;transform:translateY(0);}}
+#splash .splash-bar{width:200px;height:3px;background:rgba(255,255,255,.1);border-radius:3px;margin-top:40px;overflow:hidden;}
+#splash .splash-bar-fill{height:100%;width:0;background:var(--accent);border-radius:3px;animation:fillBar 3s ease forwards;}
+@keyframes fillBar{to{width:100%;}}
+
+.glass{background:var(--glass-bg);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid var(--glass-border);border-radius:var(--radius);box-shadow:var(--card-shadow);transition:background .4s,border-color .4s,box-shadow .4s;}
+.glass-hover:hover{border-color:var(--accent);box-shadow:0 0 20px var(--accent-glow),var(--card-shadow);transform:translateY(-2px);}
+
+#sidebar{position:fixed;left:0;top:0;bottom:0;width:var(--sidebar-w);background:var(--glass-bg);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border-right:1px solid var(--glass-border);z-index:100;display:flex;flex-direction:column;transition:transform .35s cubic-bezier(.4,0,.2,1),background .4s;overflow-y:auto;}
+#sidebar .brand{padding:24px 20px;border-bottom:1px solid var(--glass-border);text-align:center;}
+#sidebar .brand h3{font-family:'Orbitron',sans-serif;font-size:15px;font-weight:700;color:var(--accent);letter-spacing:1px;}
+#sidebar .brand small{font-size:11px;color:var(--text-muted);display:block;margin-top:4px;}
+#sidebar nav{flex:1;padding:12px 0;}
+#sidebar nav .nav-item{display:flex;align-items:center;gap:12px;padding:13px 24px;cursor:pointer;color:var(--text-secondary);font-size:15px;font-weight:500;border-left:3px solid transparent;transition:all .25s;}
+#sidebar nav .nav-item:hover{background:var(--accent-dim);color:var(--text-primary);}
+#sidebar nav .nav-item.active{background:var(--accent-dim);color:var(--accent);border-left-color:var(--accent);font-weight:700;}
+#sidebar nav .nav-item i{width:20px;text-align:center;font-size:16px;}
+#sidebar .sidebar-footer{padding:16px 20px;border-top:1px solid var(--glass-border);font-size:11px;color:var(--text-muted);text-align:center;}
+
+#main{margin-left:var(--sidebar-w);min-height:100vh;padding:24px 28px 80px;position:relative;transition:margin-left .35s;}
+.tab-content{display:none;animation:fadeIn .4s ease;}
+.tab-content.active{display:block;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+
+.dash-title{font-family:'Orbitron',sans-serif;font-size:clamp(28px,5vw,52px);font-weight:900;text-align:center;padding:30px 0 10px;background:linear-gradient(90deg,var(--accent),#ffc107,#ff6b35,var(--accent));background-size:300% auto;-webkit-background-clip:text;-webkit-text-fill-color:transparent;animation:titleShift 4s ease infinite,titlePulse 3s ease-in-out infinite;filter:drop-shadow(0 0 30px var(--accent-glow));}
+@keyframes titleShift{0%{background-position:0% 50%;}50%{background-position:100% 50%;}100%{background-position:0% 50%;}}
+@keyframes titlePulse{0%,100%{transform:scale(1);opacity:1;}50%{transform:scale(1.02);opacity:.92;}}
+.dash-subtitle{text-align:center;color:var(--text-muted);font-size:14px;letter-spacing:4px;text-transform:uppercase;margin-bottom:30px;}
+.dash-clock{text-align:center;font-family:'Oxanium',monospace;font-size:clamp(18px,3vw,30px);color:var(--accent);margin-bottom:30px;letter-spacing:2px;}
+.dash-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:20px;margin-bottom:30px;}
+.dash-card{padding:24px;text-align:center;transition:all .3s;}
+.dash-card .card-icon{font-size:32px;margin-bottom:10px;color:var(--accent);}
+.dash-card .card-value{font-size:22px;font-weight:700;color:var(--text-primary);word-break:break-word;}
+.dash-card .card-label{font-size:12px;color:var(--text-muted);margin-top:4px;text-transform:uppercase;letter-spacing:1px;}
+.last-entry-box{padding:24px;margin-top:10px;}
+.last-entry-box h4{color:var(--accent);font-size:16px;margin-bottom:14px;}
+.last-entry-box .le-row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.05);font-size:14px;}
+.last-entry-box .le-row span:first-child{color:var(--text-muted);}
+.last-entry-box .le-row span:last-child{color:var(--text-primary);font-weight:600;}
+
+.marquee-footer{position:fixed;bottom:0;left:var(--sidebar-w);right:0;background:var(--glass-bg);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-top:1px solid var(--glass-border);padding:8px 0;overflow:hidden;z-index:90;transition:left .35s;}
+.marquee-text{display:inline-block;white-space:nowrap;animation:marqueeScroll 22s linear infinite;font-size:14px;font-weight:600;}
+.marquee-text .neon-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--accent);margin:0 12px;box-shadow:0 0 8px var(--accent),0 0 16px var(--accent);animation:neonBlink 1s ease-in-out infinite;}
+@keyframes marqueeScroll{0%{transform:translateX(100vw);}100%{transform:translateX(-100%);}}
+@keyframes neonBlink{0%,100%{opacity:1;box-shadow:0 0 8px var(--accent),0 0 16px var(--accent);}50%{opacity:.3;box-shadow:none;}}
+
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);z-index:500;display:none;align-items:center;justify-content:center;animation:fadeIn .3s;}
+.modal-overlay.show{display:flex;}
+.modal-box{width:95%;max-width:900px;max-height:90vh;overflow-y:auto;padding:32px;position:relative;}
+.modal-box h2{font-family:'Orbitron',sans-serif;font-size:20px;color:var(--accent);margin-bottom:24px;}
+.modal-close{position:absolute;top:16px;right:20px;background:none;border:none;color:var(--text-muted);font-size:22px;cursor:pointer;transition:color .2s;}
+.modal-close:hover{color:var(--danger);}
+
+.cat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:24px;}
+.cat-card{padding:28px 20px;text-align:center;cursor:pointer;transition:all .3s;}
+.cat-card:hover{border-color:var(--accent);transform:translateY(-3px);box-shadow:0 0 24px var(--accent-glow);}
+.cat-card i{font-size:36px;color:var(--accent);margin-bottom:10px;display:block;}
+.cat-card h4{font-size:16px;color:var(--text-primary);}
+
+.form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;}
+.form-group{display:flex;flex-direction:column;gap:6px;}
+.form-group label{font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;font-weight:600;}
+.form-group input,.form-group select,.form-group textarea{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:10px 14px;color:var(--text-primary);font-family:var(--font-family);font-size:15px;transition:border-color .25s,box-shadow .25s;outline:none;}
+.form-group input:focus,.form-group select:focus,.form-group textarea:focus{border-color:var(--accent);box-shadow:0 0 12px var(--accent-glow);}
+.form-group input[readonly]{opacity:.6;cursor:default;}
+.form-group .balance-display{background:var(--accent-dim);border:2px solid var(--accent);border-radius:8px;padding:10px 14px;font-weight:700;font-size:18px;color:var(--accent);}
+
+.btn{display:inline-flex;align-items:center;gap:8px;padding:10px 22px;border:none;border-radius:8px;cursor:pointer;font-family:var(--font-family);font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:1px;transition:all .25s;}
+.btn-primary{background:var(--accent);color:#000;}
+.btn-primary:hover{box-shadow:0 0 20px var(--accent-glow);transform:translateY(-1px);}
+.btn-danger{background:var(--danger);color:#fff;}
+.btn-danger:hover{box-shadow:0 0 20px rgba(255,82,82,.4);}
+.btn-warning{background:var(--warning);color:#000;}
+.btn-outline{background:transparent;border:1px solid var(--glass-border);color:var(--text-secondary);}
+.btn-outline:hover{border-color:var(--accent);color:var(--accent);}
+.btn-sm{padding:6px 14px;font-size:12px;}
+
+.table-wrap{overflow-x:auto;margin-top:16px;border-radius:var(--radius);}
+table{width:100%;border-collapse:collapse;font-size:13px;}
+thead th{background:rgba(255,255,255,.05);padding:10px 12px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--text-muted);border-bottom:1px solid var(--glass-border);position:sticky;top:0;z-index:2;white-space:nowrap;}
+tbody td{padding:9px 12px;border-bottom:1px solid rgba(255,255,255,.04);color:var(--text-secondary);vertical-align:middle;white-space:nowrap;}
+tbody tr{transition:background .2s;}
+tbody tr:hover{background:rgba(255,255,255,.04);}
+tbody tr.invoiced-row{background:var(--accent-dim);border-left:3px solid var(--accent);}
+tbody tr.invoiced-row td:first-child::before{content:'';display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--accent);margin-right:6px;}
+tbody tr.paid-row{background:rgba(0,230,118,0.18)!important;border-left:4px solid var(--accent)!important;}
+tbody tr.paid-row td:first-child::after{content:'✓';display:inline-block;margin-left:6px;color:var(--accent);font-weight:900;}
+.badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap;}
+.badge-green{background:rgba(0,230,118,.2);color:#00e676;}
+.badge-yellow{background:rgba(255,193,7,.2);color:#ffc107;}
+.badge-red{background:rgba(255,82,82,.2);color:#ff5252;}
+.badge-blue{background:rgba(0,188,212,.2);color:#00bcd4;}
+.badge-cat{padding:4px 12px;font-size:11px;font-weight:700;border-radius:6px;letter-spacing:.5px;}
+
+.running-bal{font-weight:700;color:var(--accent);}
+
+.invoice-preview{padding:32px;background:#fff;color:#111;border-radius:8px;max-width:800px;margin:20px auto;}
+.invoice-preview h2{color:#111;font-size:22px;margin-bottom:4px;}
+.invoice-preview table{color:#222;}
+.invoice-preview thead th{background:#f0f0f0;color:#333;}
+.invoice-preview tbody td{color:#333;border-bottom:1px solid #e0e0e0;}
+
+.theme-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:14px;}
+.theme-swatch{height:70px;border-radius:10px;cursor:pointer;position:relative;border:2px solid transparent;transition:all .3s;display:flex;align-items:flex-end;justify-content:center;padding-bottom:6px;}
+.theme-swatch:hover,.theme-swatch.active{border-color:var(--accent);transform:scale(1.05);}
+.theme-swatch span{font-size:10px;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.8);font-weight:700;}
+.font-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;}
+.font-item{padding:14px 18px;cursor:pointer;border-radius:10px;border:2px solid transparent;transition:all .3s;}
+.font-item:hover,.font-item.active{border-color:var(--accent);}
+.font-item span{font-size:16px;display:block;}
+.toggle-switch{position:relative;width:56px;height:28px;display:inline-block;}
+.toggle-switch input{opacity:0;width:0;height:0;}
+.toggle-slider{position:absolute;inset:0;background:rgba(255,255,255,.15);border-radius:28px;cursor:pointer;transition:.3s;}
+.toggle-slider::before{content:'';position:absolute;width:22px;height:22px;border-radius:50%;left:3px;bottom:3px;background:#fff;transition:.3s;}
+.toggle-switch input:checked+.toggle-slider{background:var(--accent);}
+.toggle-switch input:checked+.toggle-slider::before{transform:translateX(28px);}
+
+#menuToggle{display:none;position:fixed;top:14px;left:14px;z-index:200;background:var(--glass-bg);border:1px solid var(--glass-border);color:var(--accent);width:42px;height:42px;border-radius:10px;font-size:20px;cursor:pointer;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);}
+@media(max-width:768px){
+  #menuToggle{display:flex;align-items:center;justify-content:center;}
+  #sidebar{transform:translateX(-100%);}
+  #sidebar.open{transform:translateX(0);}
+  #main{margin-left:0;padding:16px 14px 80px;}
+  .marquee-footer{left:0;}
+  .form-grid{grid-template-columns:1fr;}
+  .dash-cards{grid-template-columns:1fr 1fr;}
+}
+@media(max-width:480px){.dash-cards{grid-template-columns:1fr;}}
+@media print{body *{visibility:hidden;}.invoice-preview,.invoice-preview *{visibility:visible;}.invoice-preview{position:absolute;left:0;top:0;width:100%;}}
+
+.toast-container{position:fixed;top:20px;right:20px;z-index:9000;display:flex;flex-direction:column;gap:10px;}
+.toast{padding:14px 22px;border-radius:10px;font-size:14px;font-weight:600;animation:slideInRight .4s ease,fadeOutRight .4s ease 2.6s forwards;min-width:250px;display:flex;align-items:center;gap:10px;box-shadow:0 4px 20px rgba(0,0,0,.3);}
+.toast-success{background:rgba(0,230,118,.9);color:#000;}
+.toast-error{background:rgba(255,82,82,.9);color:#fff;}
+.toast-info{background:rgba(0,188,212,.9);color:#000;}
+@keyframes slideInRight{from{transform:translateX(100%);opacity:0;}to{transform:translateX(0);opacity:1;}}
+@keyframes fadeOutRight{to{transform:translateX(100%);opacity:0;}}
+
+.confirm-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);z-index:600;display:flex;align-items:center;justify-content:center;}
+.confirm-box{padding:28px;max-width:400px;text-align:center;}
+.confirm-box p{margin-bottom:20px;font-size:16px;}
+.confirm-box .btn-row{display:flex;gap:12px;justify-content:center;}
+
+body.light-mode{--glass-bg:rgba(255,255,255,.55);--glass-border:rgba(0,0,0,.1);--text-primary:#1a1a2e;--text-secondary:#333;--text-muted:#666;--card-shadow:0 8px 32px rgba(0,0,0,.1);}
+body.light-mode #sidebar{background:rgba(255,255,255,.7);}
+body.light-mode .modal-box{background:rgba(255,255,255,.85);}
+body.light-mode table thead th{background:rgba(0,0,0,.04);}
+body.light-mode .form-group input,body.light-mode .form-group select{background:rgba(0,0,0,.04);border-color:rgba(0,0,0,.12);color:#1a1a2e;}
+body.light-mode .toast-success{background:rgba(0,180,90,.9);color:#fff;}
+body.light-mode .toast-error{background:rgba(200,40,40,.9);color:#fff;}
+body.light-mode .toast-info{background:rgba(0,150,180,.9);color:#fff;}
+
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important;}}
+</style>
+</head>
+<body>
+
+<div id="splash">
+  <div class="logo-ring"></div>
+  <div class="logo-ring2"></div>
+  <i class="fa-solid fa-truck-fast splash-icon"></i>
+  <h1>WELCOME TO NADIR ENTERPRISE</h1>
+  <h2>Transport Management System</h2>
+  <div class="splash-bar"><div class="splash-bar-fill"></div></div>
+</div>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<div class="confirm-overlay" id="confirmOverlay" style="display:none">
+  <div class="confirm-box glass">
+    <p id="confirmMsg">Are you sure?</p>
+    <div class="btn-row">
+      <button class="btn btn-danger" id="confirmYes">Yes, Confirm</button>
+      <button class="btn btn-outline" id="confirmNo">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<button id="menuToggle" aria-label="Toggle menu"><i class="fa-solid fa-bars"></i></button>
+
+<aside id="sidebar">
+  <div class="brand">
+    <h3>NADIR</h3>
+    <small>ENTERPRISE</small>
+  </div>
+  <nav>
+    <div class="nav-item active" data-tab="dashboard"><i class="fa-solid fa-gauge-high"></i> Dashboard</div>
+    <div class="nav-item" data-tab="dataentry"><i class="fa-solid fa-plus-circle"></i> Data Entry</div>
+    <div class="nav-item" data-tab="database"><i class="fa-solid fa-database"></i> Database</div>
+    <div class="nav-item" data-tab="ownersheet"><i class="fa-solid fa-user-tie"></i> Owner Sheet</div>
+    <div class="nav-item" data-tab="payments"><i class="fa-solid fa-money-bill-wave"></i> Payments</div>
+    <div class="nav-item" data-tab="invoice"><i class="fa-solid fa-file-invoice-dollar"></i> Invoice</div>
+    <div class="nav-item" data-tab="settings"><i class="fa-solid fa-gear"></i> Settings</div>
+  </nav>
+  <div class="sidebar-footer">v2.0 &mdash; NADIR ENTERPRISE</div>
+</aside>
+
+<main id="main">
+
+  <!-- DASHBOARD -->
+  <section class="tab-content active" id="tab-dashboard">
+    <div class="dash-title">NADIR ENTERPRISE</div>
+    <div class="dash-subtitle">Transport Management System</div>
+    <div class="dash-clock" id="dashClock">--:--:-- --</div>
+    <div class="dash-cards" id="dashCards"></div>
+    <div class="glass last-entry-box" id="lastEntryBox">
+      <h4><i class="fa-solid fa-clock-rotate-left"></i> Last Database Entry</h4>
+      <div id="lastEntryContent"><p style="color:var(--text-muted)">No entries yet.</p></div>
+    </div>
+  </section>
+
+  <!-- DATA ENTRY -->
+  <section class="tab-content" id="tab-dataentry">
+    <h2 style="font-family:'Orbitron',sans-serif;color:var(--accent);margin-bottom:20px;">
+      <i class="fa-solid fa-plus-circle"></i> New Trip Entry
+    </h2>
+    <p style="color:var(--text-muted);margin-bottom:20px;">Select a trip category to begin data entry.</p>
+    <div class="cat-grid" id="catGrid">
+      <div class="cat-card glass glass-hover" data-cat="karachi_noras">
+        <i class="fa-solid fa-road"></i>
+        <h4>Karachi Noras</h4>
+      </div>
+      <div class="cat-card glass glass-hover" data-cat="port_qasim">
+        <i class="fa-solid fa-anchor"></i>
+        <h4>Port Qasim</h4>
+      </div>
+      <div class="cat-card glass glass-hover" data-cat="lahore">
+        <i class="fa-solid fa-city"></i>
+        <h4>Lahore</h4>
+      </div>
+      <div class="cat-card glass glass-hover" data-cat="karachi_port">
+        <i class="fa-solid fa-ship"></i>
+        <h4>Karachi Port</h4>
+      </div>
+    </div>
+    <div id="entryFormArea"></div>
+  </section>
+
+  <!-- DATABASE -->
+  <section class="tab-content" id="tab-database">
+    <h2 style="font-family:'Orbitron',sans-serif;color:var(--accent);margin-bottom:6px;">
+      <i class="fa-solid fa-database"></i> Database
+    </h2>
+    <p style="color:var(--text-muted);margin-bottom:16px;">All trip entries displayed with category-specific columns. Invoiced rows are highlighted.</p>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px;align-items:center;">
+      <select id="dbFilterCat" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:8px 14px;color:var(--text-primary);font-family:var(--font-family);outline:none;min-width:180px;">
+        <option value="all">All Categories</option>
+        <option value="karachi_noras">Karachi Noras</option>
+        <option value="port_qasim">Port Qasim</option>
+        <option value="lahore">Lahore</option>
+        <option value="karachi_port">Karachi Port</option>
+      </select>
+      <select id="dbFilterOwner" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:8px 14px;color:var(--accent);font-family:var(--font-family);outline:none;min-width:180px;">
+        <option value="" style="color:var(--accent)">-- All Owners --</option>
+      </select>
+      <input type="text" id="dbSearch" placeholder="Search by owner, vehicle, destination..." style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:8px 14px;color:var(--text-primary);font-family:var(--font-family);flex:1;min-width:200px;outline:none;">
+      <button class="btn btn-outline btn-sm" id="dbExportBtn" title="Export current view"><i class="fa-solid fa-download"></i> Export</button>
+    </div>
+    <div class="glass table-wrap" id="dbTableWrap">
+      <table><thead id="dbThead"></thead><tbody id="dbTbody"></tbody></table>
+    </div>
+  </section>
+
+  <!-- OWNER SHEET -->
+  <section class="tab-content" id="tab-ownersheet">
+    <h2 style="font-family:'Orbitron',sans-serif;color:var(--accent);margin-bottom:6px;">
+      <i class="fa-solid fa-user-tie"></i> Owner Sheet
+    </h2>
+    <p style="color:var(--text-muted);margin-bottom:16px;">Select an owner to view their complete ledger with running balance.</p>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px;">
+      <select id="ownerSelect" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:8px 14px;color:var(--text-primary);font-family:var(--font-family);min-width:220px;outline:none;">
+        <option value="">-- Select Owner --</option>
+      </select>
+    </div>
+    <div id="ownerLedgerArea"></div>
+  </section>
+
+  <!-- PAYMENTS -->
+  <section class="tab-content" id="tab-payments">
+    <h2 style="font-family:'Orbitron',sans-serif;color:var(--accent);margin-bottom:6px;">
+      <i class="fa-solid fa-money-bill-wave"></i> Payments
+    </h2>
+    <p style="color:var(--text-muted);margin-bottom:20px;">Record payments to owners. Payments automatically reflect in the owner's ledger.</p>
+    <div class="glass" style="padding:24px;margin-bottom:24px;">
+      <h4 style="color:var(--accent);margin-bottom:16px;">Add Payment</h4>
+      <div class="form-grid">
+        <div class="form-group"><label>Date</label><input type="date" id="payDate"></div>
+        <div class="form-group"><label>Owner Name</label><select id="payOwner" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:10px 14px;color:var(--text-primary);font-family:var(--font-family);outline:none;"><option value="">-- Select Owner --</option></select></div>
+        <div class="form-group"><label>Description / Reference</label><input type="text" id="payDesc" placeholder="Payment reference..."></div>
+        <div class="form-group"><label>Amount (PKR)</label><input type="number" id="payAmount" placeholder="0" min="0"></div>
+      </div>
+      <button class="btn btn-primary" style="margin-top:16px;" onclick="addPayment()"><i class="fa-solid fa-plus"></i> Record Payment</button>
+    </div>
+    <div class="glass table-wrap">
+      <table><thead><tr><th>#</th><th>Date</th><th>Owner</th><th>Description</th><th>Amount (PKR)</th><th>Actions</th></tr></thead><tbody id="payTbody"></tbody></table>
+    </div>
+  </section>
+
+  <!-- INVOICE -->
+  <section class="tab-content" id="tab-invoice">
+    <h2 style="font-family:'Orbitron',sans-serif;color:var(--accent);margin-bottom:6px;">
+      <i class="fa-solid fa-file-invoice-dollar"></i> Invoice
+    </h2>
+    <p style="color:var(--text-muted);margin-bottom:20px;">Generate, view, and manage invoices. Invoiced entries are highlighted in the Database tab.</p>
+    <div class="glass" style="padding:24px;margin-bottom:24px;">
+      <h4 style="color:var(--accent);margin-bottom:16px;">Generate New Invoice</h4>
+      <div class="form-grid">
+        <div class="form-group"><label>Owner Name</label><select id="invOwner" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:10px 14px;color:var(--text-primary);font-family:var(--font-family);outline:none;"><option value="">-- Select Owner --</option></select></div>
+        <div class="form-group"><label>From Date</label><input type="date" id="invFromDate"></div>
+        <div class="form-group"><label>To Date</label><input type="date" id="invToDate"></div>
+      </div>
+      <button class="btn btn-primary" style="margin-top:16px;" onclick="generateInvoice()"><i class="fa-solid fa-file-invoice"></i> Generate Invoice</button>
+    </div>
+    <div id="invoicePreviewArea"></div>
+    <h4 style="color:var(--accent);margin:20px 0 10px;">Existing Invoices</h4>
+    <div class="glass table-wrap">
+      <table><thead><tr><th>Inv #</th><th>Owner</th><th>From</th><th>To</th><th>Trips</th><th>Total Balance</th><th>Payments</th><th>Net</th><th>Actions</th></tr></thead><tbody id="invTbody"></tbody></table>
+    </div>
+  </section>
+
+  <!-- SETTINGS -->
+  <section class="tab-content" id="tab-settings">
+    <h2 style="font-family:'Orbitron',sans-serif;color:var(--accent);margin-bottom:20px;">
+      <i class="fa-solid fa-gear"></i> Settings
+    </h2>
+    <div class="glass" style="padding:24px;margin-bottom:24px;">
+      <h4 style="color:var(--accent);margin-bottom:16px;"><i class="fa-solid fa-palette"></i> Theme</h4>
+      <div class="theme-grid" id="themeGrid"></div>
+    </div>
+    <div class="glass" style="padding:24px;margin-bottom:24px;">
+      <h4 style="color:var(--accent);margin-bottom:16px;"><i class="fa-solid fa-font"></i> Typography</h4>
+      <div class="font-list" id="fontList"></div>
+    </div>
+    <div class="glass" style="padding:24px;margin-bottom:24px;">
+      <h4 style="color:var(--accent);margin-bottom:16px;"><i class="fa-solid fa-moon"></i> Display Mode</h4>
+      <div style="display:flex;align-items:center;gap:14px;">
+        <span style="color:var(--text-secondary);">Night Mood</span>
+        <label class="toggle-switch"><input type="checkbox" id="modeToggle"><span class="toggle-slider"></span></label>
+        <span style="color:var(--text-secondary);">Daylight</span>
+      </div>
+    </div>
+    <div class="glass" style="padding:24px;margin-bottom:24px;">
+      <h4 style="color:var(--accent);margin-bottom:16px;"><i class="fa-solid fa-shield-halved"></i> Data Management</h4>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;">
+        <button class="btn btn-primary" onclick="exportData()"><i class="fa-solid fa-download"></i> Backup Data (JSON)</button>
+        <button class="btn btn-warning" onclick="document.getElementById('importFile').click()"><i class="fa-solid fa-upload"></i> Restore Data (JSON)</button>
+        <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
+        <button class="btn btn-danger" onclick="clearDatabase()"><i class="fa-solid fa-trash"></i> Clear Database</button>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<div class="marquee-footer" id="marqueeFooter">
+  <div class="marquee-text">
+    <span class="neon-dot"></span> Created by "NADEEM AKRAM" &mdash; 0323-2371536 <span class="neon-dot"></span>
+    Created by "NADEEM AKRAM" &mdash; 0323-2371536 <span class="neon-dot"></span>
+    Created by "NADEEM AKRAM" &mdash; 0323-2371536 <span class="neon-dot"></span>
+  </div>
+</div>
+
+<!-- EDIT MODAL -->
+<div class="modal-overlay" id="editModal">
+  <div class="modal-box glass">
+    <button class="modal-close" onclick="closeEditModal()"><i class="fa-solid fa-xmark"></i></button>
+    <h2 id="editModalTitle">Edit Entry</h2>
+    <div id="editFormArea"></div>
+  </div>
+</div>
+
+<datalist id="destinationList">
+  <option value="Lahore">
+  <option value="Faisalabad">
+  <option value="Multan">
+  <option value="Gujranwala">
+  <option value="Sheikhupura">
+  <option value="Islamabad">
+  <option value="Dumba Goth">
+  <option value="Gulshan-e-Maymar">
+  <option value="Hub Chowki">
+</datalist>
+
+<script>
+/* ================================================================
+   NADIR ENTERPRISE - Transport Management System
+   ================================================================ */
+
+// ==================== THEMES ====================
+var THEMES = [
+  { name:'Emerald Night', bg:'linear-gradient(135deg,#0a1a0f,#0d2818,#071510)', accent:'#00e676', glass:'rgba(10,30,18,0.65)', border:'rgba(0,230,118,0.18)' },
+  { name:'Midnight Ocean', bg:'linear-gradient(135deg,#0a1628,#1a2a4a,#0d1b2a)', accent:'#00b4d8', glass:'rgba(10,22,40,0.65)', border:'rgba(0,180,216,0.18)' },
+  { name:'Sunset Blaze', bg:'linear-gradient(135deg,#1a0a00,#3d1500,#2a0d00)', accent:'#ff6b35', glass:'rgba(40,10,0,0.65)', border:'rgba(255,107,53,0.18)' },
+  { name:'Cosmic Grape', bg:'linear-gradient(135deg,#1a0a2a,#2d1040,#140820)', accent:'#e040fb', glass:'rgba(26,10,42,0.65)', border:'rgba(224,64,251,0.18)' },
+  { name:'Arctic Aurora', bg:'linear-gradient(135deg,#0a1a2a,#0d2838,#071520)', accent:'#00e5ff', glass:'rgba(10,26,42,0.65)', border:'rgba(0,229,255,0.18)' },
+  { name:'Desert Gold', bg:'linear-gradient(135deg,#1a1400,#2d2000,#141000)', accent:'#ffc107', glass:'rgba(26,20,0,0.65)', border:'rgba(255,193,7,0.18)' },
+  { name:'Rose Garden', bg:'linear-gradient(135deg,#1a0a14,#2d1020,#140810)', accent:'#ff4081', glass:'rgba(26,10,20,0.65)', border:'rgba(255,64,129,0.18)' },
+  { name:'Deep Space', bg:'linear-gradient(135deg,#050510,#0a0a20,#030308)', accent:'#7c4dff', glass:'rgba(5,5,16,0.7)', border:'rgba(124,77,255,0.18)' },
+  { name:'Tropical Lagoon', bg:'linear-gradient(135deg,#0a1a1a,#0d2828,#071515)', accent:'#1de9b6', glass:'rgba(10,26,26,0.65)', border:'rgba(29,233,182,0.18)' },
+  { name:'Volcanic Ember', bg:'linear-gradient(135deg,#1a0a0a,#2d1010,#140808)', accent:'#ff3d00', glass:'rgba(26,10,10,0.65)', border:'rgba(255,61,0,0.18)' },
+  { name:'Amethyst Haze', bg:'linear-gradient(135deg,#140a1a,#201030,#100818)', accent:'#ce93d8', glass:'rgba(20,10,26,0.65)', border:'rgba(206,147,216,0.18)' },
+  { name:'Steel Chrome', bg:'linear-gradient(135deg,#1a1a1a,#2a2a2a,#141414)', accent:'#90a4ae', glass:'rgba(26,26,26,0.7)', border:'rgba(144,164,174,0.18)' },
+  { name:'Golden Dawn', bg:'linear-gradient(135deg,#1a1200,#2d1f00,#141000)', accent:'#ffab00', glass:'rgba(26,18,0,0.65)', border:'rgba(255,171,0,0.18)' },
+  { name:'Ocean Abyss', bg:'linear-gradient(135deg,#0a0a1a,#101030,#080818)', accent:'#448aff', glass:'rgba(10,10,26,0.65)', border:'rgba(68,138,255,0.18)' },
+  { name:'Neon Cyber', bg:'linear-gradient(135deg,#0a0a0a,#1a1a1a,#050505)', accent:'#00ff9f', glass:'rgba(10,10,10,0.7)', border:'rgba(0,255,159,0.18)' }
+];
+
+var FONTS = [
+  { name:'Rajdhani', family:"'Rajdhani', sans-serif" },
+  { name:'Orbitron', family:"'Orbitron', sans-serif" },
+  { name:'Exo 2', family:"'Exo 2', sans-serif" },
+  { name:'Audiowide', family:"'Audiowide', sans-serif" },
+  { name:'Bungee', family:"'Bungee', sans-serif" },
+  { name:'Teko', family:"'Teko', sans-serif" },
+  { name:'Russo One', family:"'Russo One', sans-serif" },
+  { name:'Black Ops One', family:"'Black Ops One', sans-serif" },
+  { name:'Michroma', family:"'Michroma', sans-serif" },
+  { name:'Saira Stencil', family:"'Saira Stencil One', sans-serif" },
+  { name:'Quantico', family:"'Quantico', sans-serif" },
+  { name:'Chakra Petch', family:"'Chakra Petch', sans-serif" },
+  { name:'Jura', family:"'Jura', sans-serif" },
+  { name:'Oxanium', family:"'Oxanium', sans-serif" },
+  { name:'Aldrich', family:"'Aldrich', sans-serif" }
+];
+
+var CAT_LABELS = {
+  karachi_noras: 'Karachi Noras',
+  port_qasim: 'Port Qasim',
+  lahore: 'Lahore',
+  karachi_port: 'Karachi Port'
+};
+
+// Per-category field definitions — each field shown as a column in the DB table
+var CAT_FIELDS = {
+  karachi_noras: [
+    { key:'serialNo', label:'Sr#', type:'number' },
+    { key:'date', label:'Date', type:'date' },
+    { key:'biltyNumber', label:'Bilty No', type:'text' },
+    { key:'dcNumber', label:'DC No', type:'text' },
+    { key:'vehicleNo', label:'Vehicle No', type:'text' },
+    { key:'destination', label:'Destination', type:'text' },
+    { key:'description', label:'Description', type:'text' },
+    { key:'freight', label:'Freight', type:'number' },
+    { key:'advance', label:'Advance', type:'number' },
+    { key:'dieselRate', label:'Diesel Rate/L', type:'number' },
+    { key:'dieselAmount', label:'Diesel Amt', type:'number' },
+    { key:'detention', label:'Detention', type:'number' },
+    { key:'balance', label:'Balance', type:'balance' },
+    { key:'ownerName', label:'Owner Name', type:'text' },
+    { key:'remarks', label:'Remarks', type:'text' }
+  ],
+  port_qasim: [
+    { key:'serialNo', label:'Sr#', type:'number' },
+    { key:'date', label:'Date', type:'date' },
+    { key:'biltyNumber', label:'Bilty No', type:'text' },
+    { key:'vehicleNo', label:'Vehicle No', type:'text' },
+    { key:'from', label:'From', type:'text' },
+    { key:'to', label:'To', type:'text' },
+    { key:'freight', label:'Freight', type:'number' },
+    { key:'advance', label:'Advance', type:'number' },
+    { key:'munshiyana', label:'Munshiyana', type:'number' },
+    { key:'detention', label:'Detention', type:'number' },
+    { key:'balance', label:'Balance', type:'balance' },
+    { key:'ownerName', label:'Owner Name', type:'text' },
+    { key:'remarks', label:'Remarks', type:'text' }
+  ],
+  lahore: [
+    { key:'serialNo', label:'Sr#', type:'number' },
+    { key:'date', label:'Date', type:'date' },
+    { key:'vehicleNo', label:'Vehicle No', type:'text' },
+    { key:'from', label:'From', type:'text' },
+    { key:'to', label:'To', type:'text' },
+    { key:'description', label:'Description', type:'text' },
+    { key:'freight', label:'Freight', type:'number' },
+    { key:'advance', label:'Advance', type:'number' },
+    { key:'detention', label:'Detention', type:'number' },
+    { key:'balance', label:'Balance', type:'balance' },
+    { key:'ownerName', label:'Owner Name', type:'text' },
+    { key:'remarks', label:'Remarks', type:'text' }
+  ],
+  karachi_port: [
+    { key:'serialNo', label:'Sr#', type:'number' },
+    { key:'date', label:'Date', type:'date' },
+    { key:'biltyNumber', label:'Bilty No', type:'text' },
+    { key:'vehicleNo', label:'Vehicle No', type:'text' },
+    { key:'containerScale', label:'Container Scale', type:'text' },
+    { key:'containerNo', label:'Container No', type:'text' },
+    { key:'from', label:'From', type:'text' },
+    { key:'to', label:'To', type:'text' },
+    { key:'description', label:'Description', type:'text' },
+    { key:'freight', label:'Freight', type:'number' },
+    { key:'advance', label:'Advance', type:'number' },
+    { key:'dieselRate', label:'Diesel Rate/L', type:'number' },
+    { key:'dieselAmount', label:'Diesel Amt', type:'number' },
+    { key:'munshiyana', label:'Munshiyana', type:'number' },
+    { key:'detention', label:'Detention', type:'number' },
+    { key:'balance', label:'Balance', type:'balance' },
+    { key:'ownerName', label:'Owner Name', type:'text' },
+    { key:'remarks', label:'Remarks', type:'text' }
+  ]
+};
+
+// Fields shown when "All Categories" is selected in DB
+var ALL_CAT_SUMMARY_FIELDS = [
+  { key:'serialNo', label:'Sr#' },
+  { key:'date', label:'Date' },
+  { key:'vehicleNo', label:'Vehicle' },
+  { key:'from', label:'From' },
+  { key:'to', label:'To' },
+  { key:'destination', label:'Dest/Desc' },
+  { key:'freight', label:'Freight' },
+  { key:'advance', label:'Advance' },
+  { key:'detention', label:'Detention' },
+  { key:'balance', label:'Balance' },
+  { key:'ownerName', label:'Owner' },
+  { key:'remarks', label:'Remarks' }
+];
+
+// ==================== UTILITY ====================
+function num(v) { return parseFloat(v) || 0; }
+
+function calcBalance(category, data) {
+  var f = num(data.freight), a = num(data.advance), d = num(data.detention);
+  var da = num(data.dieselAmount), m = num(data.munshiyana);
+  switch(category) {
+    case 'karachi_noras': return f - a - da + d;
+    case 'port_qasim': return f - a - m + d;
+    case 'lahore': return f - a + d;
+    case 'karachi_port': return f - a - da - m + d;
+    default: return 0;
+  }
+}
+
+function formatPKR(n) {
+  return 'PKR ' + Number(n || 0).toLocaleString('en-PK', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+}
+
+function formatDate(d) {
+  if (!d) return '-';
+  var dt = new Date(d + 'T00:00:00');
+  var dd = String(dt.getDate()).padStart(2, '0');
+  var mm = String(dt.getMonth() + 1).padStart(2, '0');
+  var yy = dt.getFullYear();
+  return dd + '/' + mm + '/' + yy;
+}
+
+function todayStr() { return new Date().toISOString().split('T')[0]; }
+
+function getUniqueOwners(entries) {
+  return [...new Set(entries.map(function(e) { return e.ownerName; }).filter(Boolean))];
+}
+
+function hexToRgba(hex, alpha) {
+  hex = hex.replace('#', '');
+  if (hex.length === 3) hex = hex[0]+hex[0]+hex[1]+hex[1]+hex[2]+hex[2];
+  var r = parseInt(hex.substring(0, 2), 16);
+  var g = parseInt(hex.substring(2, 4), 16);
+  var b = parseInt(hex.substring(4, 6), 16);
+  return 'rgba(' + r + ',' + g + ',' + b + ',' + alpha + ')';
+}
+
+// Get the display value for a cell based on field type
+function getCellDisplay(entry, field) {
+  var val = entry[field.key];
+  if (val === undefined || val === null || val === '') return '-';
+  if (field.type === 'date') return formatDate(val);
+  // Sr# column: show plain sequential number (no "PKR")
+  if (field.key === 'serialNo') return Number(val);
+  // Diesel Rate/L column: show "<amount> Ltrs" (no "PKR")
+  if (field.key === 'dieselRate') return Number(val) + ' Ltrs';
+  if (field.type === 'number' || field.type === 'balance') return formatPKR(val);
+  return val;
+}
+
+// ==================== INDEXED DB ====================
+var DB_NAME = 'NadirEnterpriseDB';
+var DB_VERSION = 2;
+var db = null;
+
+function openDB() {
+  return new Promise(function(resolve, reject) {
+    var req = indexedDB.open(DB_NAME, DB_VERSION);
+    req.onerror = function() { reject(req.error); };
+    req.onsuccess = function() { db = req.result; resolve(db); };
+    req.onupgradeneeded = function(e) {
+      var d = e.target.result;
+      if (!d.objectStoreNames.contains('entries')) {
+        var s = d.createObjectStore('entries', { keyPath: 'id', autoIncrement: true });
+        s.createIndex('category', 'category', { unique: false });
+        s.createIndex('ownerName', 'ownerName', { unique: false });
+        s.createIndex('invoiceNo', 'invoiceNo', { unique: false });
+      }
+      if (!d.objectStoreNames.contains('payments')) {
+        var s2 = d.createObjectStore('payments', { keyPath: 'id', autoIncrement: true });
+        s2.createIndex('ownerName', 'ownerName', { unique: false });
+      }
+      if (!d.objectStoreNames.contains('invoices')) {
+        var s3 = d.createObjectStore('invoices', { keyPath: 'id', autoIncrement: true });
+        s3.createIndex('invoiceNo', 'invoiceNo', { unique: false });
+        s3.createIndex('ownerName', 'ownerName', { unique: false });
+      }
+      if (!d.objectStoreNames.contains('settings')) {
+        d.createObjectStore('settings', { keyPath: 'key' });
+      }
+    };
+  });
+}
+
+function dbAdd(store, data) {
+  return new Promise(function(resolve, reject) {
+    var tx = db.transaction(store, 'readwrite');
+    var s = tx.objectStore(store);
+    var req = s.add(data);
+    req.onsuccess = function() { resolve(req.result); };
+    req.onerror = function() { console.error('dbAdd error:', req.error); reject(req.error); };
+  });
+}
+function dbPut(store, data) {
+  return new Promise(function(resolve, reject) {
+    var tx = db.transaction(store, 'readwrite');
+    var s = tx.objectStore(store);
+    var req = s.put(data);
+    req.onsuccess = function() { resolve(req.result); };
+    req.onerror = function() { console.error('dbPut error:', req.error); reject(req.error); };
+  });
+}
+function dbGetAll(store) {
+  return new Promise(function(resolve, reject) {
+    var tx = db.transaction(store, 'readonly');
+    var s = tx.objectStore(store);
+    var req = s.getAll();
+    req.onsuccess = function() { resolve(req.result); };
+    req.onerror = function() { reject(req.error); };
+  });
+}
+function dbGet(store, id) {
+  return new Promise(function(resolve, reject) {
+    var tx = db.transaction(store, 'readonly');
+    var s = tx.objectStore(store);
+    var req = s.get(id);
+    req.onsuccess = function() { resolve(req.result); };
+    req.onerror = function() { reject(req.error); };
+  });
+}
+function dbDelete(store, id) {
+  return new Promise(function(resolve, reject) {
+    var tx = db.transaction(store, 'readwrite');
+    var s = tx.objectStore(store);
+    var req = s.delete(id);
+    req.onsuccess = function() { resolve(); };
+    req.onerror = function() { reject(req.error); };
+  });
+}
+function dbClear(store) {
+  return new Promise(function(resolve, reject) {
+    var tx = db.transaction(store, 'readwrite');
+    var s = tx.objectStore(store);
+    var req = s.clear();
+    req.onsuccess = function() { resolve(); };
+    req.onerror = function() { reject(req.error); };
+  });
+}
+
+// ==================== APP STATE ====================
+var currentTab = 'dashboard';
+var appSettings = { theme: 0, font: 0, darkMode: true };
+var lastSelectedDate = todayStr();
+
+// ==================== TOAST ====================
+function showToast(msg, type) {
+  type = type || 'success';
+  var c = document.getElementById('toastContainer');
+  var t = document.createElement('div');
+  t.className = 'toast toast-' + type;
+  var icon = type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle';
+  t.innerHTML = '<i class="fa-solid fa-' + icon + '"></i> ' + msg;
+  c.appendChild(t);
+  setTimeout(function() { if (t.parentNode) t.remove(); }, 3200);
+}
+
+// ==================== CONFIRM ====================
+var confirmCallback = null;
+function showConfirm(msg, cb) {
+  document.getElementById('confirmMsg').textContent = msg;
+  document.getElementById('confirmOverlay').style.display = 'flex';
+  confirmCallback = cb;
+}
+document.getElementById('confirmYes').onclick = function() {
+  document.getElementById('confirmOverlay').style.display = 'none';
+  if (confirmCallback) confirmCallback();
+  confirmCallback = null;
+};
+document.getElementById('confirmNo').onclick = function() {
+  document.getElementById('confirmOverlay').style.display = 'none';
+  confirmCallback = null;
+};
+
+// ==================== NAVIGATION ====================
+document.querySelectorAll('#sidebar .nav-item').forEach(function(item) {
+  item.addEventListener('click', function() {
+    var tab = item.dataset.tab;
+    switchTab(tab);
+    document.getElementById('sidebar').classList.remove('open');
+  });
+});
+document.getElementById('menuToggle').addEventListener('click', function() {
+  document.getElementById('sidebar').classList.toggle('open');
+});
+
+function switchTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll('.nav-item').forEach(function(n) { n.classList.toggle('active', n.dataset.tab === tab); });
+  document.querySelectorAll('.tab-content').forEach(function(t) { t.classList.toggle('active', t.id === 'tab-' + tab); });
+  if (tab === 'dashboard') renderDashboard();
+  else if (tab === 'database') renderDatabase();
+  else if (tab === 'ownersheet') renderOwnerSheet();
+  else if (tab === 'payments') renderPayments();
+  else if (tab === 'invoice') renderInvoice();
+  else if (tab === 'settings') renderSettings();
+}
+
+// ==================== CLOCK ====================
+function updateClock() {
+  var now = new Date();
+  var timeOpts = { timeZone: 'Asia/Karachi', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true };
+  var dateOpts = { timeZone: 'Asia/Karachi', day: '2-digit', month: '2-digit', year: 'numeric' };
+  var time = now.toLocaleTimeString('en-US', timeOpts);
+  var date = now.toLocaleDateString('en-GB', dateOpts);
+  var el = document.getElementById('dashClock');
+  if (el) el.textContent = time + '  \u2014  ' + date;
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// ==================== DASHBOARD ====================
+async function renderDashboard() {
+  try {
+    var entries = await dbGetAll('entries');
+    var payments = await dbGetAll('payments');
+    var totalFreight = entries.reduce(function(s, e) { return s + num(e.freight); }, 0);
+    var totalBalance = entries.reduce(function(s, e) { return s + num(e.balance); }, 0);
+    var totalPayments = payments.reduce(function(s, p) { return s + num(p.amount); }, 0);
+
+    var cards = document.getElementById('dashCards');
+    cards.innerHTML =
+      '<div class="glass glass-hover dash-card"><div class="card-icon"><i class="fa-solid fa-list-ol"></i></div><div class="card-value">' + entries.length + '</div><div class="card-label">Total Entries</div></div>' +
+      '<div class="glass glass-hover dash-card"><div class="card-icon"><i class="fa-solid fa-truck"></i></div><div class="card-value">' + formatPKR(totalFreight) + '</div><div class="card-label">Total Freight</div></div>' +
+      '<div class="glass glass-hover dash-card"><div class="card-icon"><i class="fa-solid fa-scale-balanced"></i></div><div class="card-value">' + formatPKR(totalBalance) + '</div><div class="card-label">Total Balance</div></div>' +
+      '<div class="glass glass-hover dash-card"><div class="card-icon"><i class="fa-solid fa-money-bill-transfer"></i></div><div class="card-value">' + formatPKR(totalPayments) + '</div><div class="card-label">Total Payments</div></div>' +
+      '<div class="glass glass-hover dash-card"><div class="card-icon"><i class="fa-solid fa-users"></i></div><div class="card-value">' + getUniqueOwners(entries).length + '</div><div class="card-label">Owners</div></div>' +
+      '<div class="glass glass-hover dash-card"><div class="card-icon"><i class="fa-solid fa-file-invoice"></i></div><div class="card-value">' + entries.filter(function(e) { return e.invoiceNo; }).length + '</div><div class="card-label">Invoiced Entries</div></div>';
+
+    var leb = document.getElementById('lastEntryContent');
+    if (entries.length === 0) {
+      leb.innerHTML = '<p style="color:var(--text-muted)">No entries yet.</p>';
+    } else {
+      var last = entries.reduce(function(a, b) { return a.id > b.id ? a : b; });
+      var fields = CAT_FIELDS[last.category] || [];
+      var html = '<div class="le-row"><span>Category</span><span>' + (CAT_LABELS[last.category] || last.category) + '</span></div>';
+      fields.forEach(function(f) {
+        if (f.key === 'balance') {
+          html += '<div class="le-row"><span>' + f.label + '</span><span style="color:var(--accent);font-weight:700">' + formatPKR(last[f.key]) + '</span></div>';
+        } else {
+          html += '<div class="le-row"><span>' + f.label + '</span><span>' + (last[f.key] || '-') + '</span></div>';
+        }
+      });
+      if (last.invoiceNo) html += '<div class="le-row"><span>Invoice #</span><span class="badge badge-green">' + last.invoiceNo + '</span></div>';
+      leb.innerHTML = html;
+    }
+  } catch(err) { console.error('Dashboard error:', err); }
+}
+
+// ==================== DATA ENTRY ====================
+document.querySelectorAll('.cat-card').forEach(function(card) {
+  card.addEventListener('click', function() { renderEntryForm(card.dataset.cat); });
+});
+
+async function renderEntryForm(category) {
+  try {
+    var entries = await dbGetAll('entries');
+    var catEntries = entries.filter(function(e) { return e.category === category; });
+    var nextSerial = catEntries.length > 0 ? Math.max.apply(null, catEntries.map(function(e) { return num(e.serialNo); })) + 1 : 1;
+  } catch(err) { var nextSerial = 1; }
+
+  var fields = CAT_FIELDS[category];
+  var html = '<div class="glass" style="padding:28px;margin-top:24px;" id="entryFormGlass">';
+  html += '<h3 style="color:var(--accent);margin-bottom:20px;">' + CAT_LABELS[category] + ' \u2014 New Entry</h3>';
+  html += '<div class="form-grid">';
+
+  fields.forEach(function(f) {
+    if (f.type === 'balance') {
+      html += '<div class="form-group"><label>' + f.label + '</label><div class="balance-display" id="entry_balance">PKR 0</div></div>';
+    } else {
+      var val = '';
+      if (f.key === 'serialNo') val = nextSerial;
+      if (f.key === 'date') val = lastSelectedDate;
+      var inputType = f.type === 'date' ? 'date' : f.type === 'number' ? 'number' : 'text';
+      var minAttr = f.type === 'number' ? ' min="0"' : '';
+      var listAttr = (f.key === 'destination') ? ' list="destinationList"' : '';
+      var changeAttr = (f.key === 'date') ? ' onchange="lastSelectedDate=this.value;dbPut(\'settings\',{key:\'lastDate\',value:this.value}).catch(function(){})"' : '';
+      html += '<div class="form-group"><label>' + f.label + '</label><input type="' + inputType + '" id="entry_' + f.key + '" value="' + val + '"' + minAttr + listAttr + changeAttr + ' oninput="updateEntryBalance(\'' + category + '\')"></div>';
+    }
+  });
+
+  html += '</div>';
+  html += '<div style="display:flex;gap:12px;margin-top:24px;">';
+  html += '<button class="btn btn-primary" onclick="saveEntry(\'' + category + '\')"><i class="fa-solid fa-save"></i> Save Entry</button>';
+  html += '<button class="btn btn-outline" onclick="cancelEntry()"><i class="fa-solid fa-xmark"></i> Cancel</button>';
+  html += '</div></div>';
+
+  document.getElementById('entryFormArea').innerHTML = html;
+  document.getElementById('entryFormArea').scrollIntoView({ behavior: 'smooth' });
+  updateEntryBalance(category);
+
+  // Arrow key navigation
+  setupArrowNav('entryFormGlass');
+}
+
+function updateEntryBalance(category) {
+  var data = {};
+  var fields = CAT_FIELDS[category];
+  if (!fields) return;
+  fields.forEach(function(f) {
+    if (f.type !== 'balance') {
+      var el = document.getElementById('entry_' + f.key);
+      data[f.key] = el ? el.value : 0;
+    }
+  });
+  var bal = calcBalance(category, data);
+  var balEl = document.getElementById('entry_balance');
+  if (balEl) balEl.textContent = formatPKR(bal);
+}
+
+function cancelEntry() { document.getElementById('entryFormArea').innerHTML = ''; }
+
+// ==================== ARROW KEY NAVIGATION ====================
+function setupArrowNav(containerId) {
+  var container = document.getElementById(containerId);
+  if (!container) return;
+  container.addEventListener('keydown', function(e) {
+    if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
+    var inputs = Array.from(container.querySelectorAll('input, select, textarea'));
+    var idx = inputs.indexOf(document.activeElement);
+    if (idx === -1) return;
+    e.preventDefault();
+    if (e.key === 'ArrowDown' && idx < inputs.length - 1) inputs[idx + 1].focus();
+    else if (e.key === 'ArrowUp' && idx > 0) inputs[idx - 1].focus();
+  });
+}
+
+async function saveEntry(category) {
+  var data = { category: category };
+  var fields = CAT_FIELDS[category];
+  if (!fields) { showToast('Invalid category!', 'error'); return; }
+
+  fields.forEach(function(f) {
+    if (f.type !== 'balance') {
+      var el = document.getElementById('entry_' + f.key);
+      data[f.key] = el ? el.value : '';
+    }
+  });
+
+  data.balance = calcBalance(category, data);
+  data.invoiceNo = null;
+  data.createdAt = new Date().toISOString();
+
+  if (!data.ownerName || !data.ownerName.trim()) {
+    showToast('Owner Name is required!', 'error');
+    return;
+  }
+
+  try {
+    var newId = await dbAdd('entries', data);
+    showToast('Entry saved successfully! ID: ' + newId);
+    renderEntryForm(category);
+    if (currentTab === 'dashboard') renderDashboard();
+    else if (currentTab === 'database') renderDatabase();
+  } catch(err) {
+    console.error('Save error:', err);
+    showToast('Error saving entry: ' + err.message, 'error');
+  }
+}
+
+// ==================== DATABASE TAB (Category-specific columns) ====================
+async function renderDatabase() {
+  try {
+    var entries = await dbGetAll('entries');
+  } catch(err) {
+    document.getElementById('dbTbody').innerHTML = '<tr><td colspan="20" style="text-align:center;color:var(--danger);">Error loading entries.</td></tr>';
+    return;
+  }
+
+  var filterCat = document.getElementById('dbFilterCat').value;
+  var filterOwner = document.getElementById('dbFilterOwner') ? document.getElementById('dbFilterOwner').value : '';
+  var search = (document.getElementById('dbSearch').value || '').toLowerCase();
+
+  // Populate owner filter dropdown
+  var owners = getUniqueOwners(entries);
+  var ownerSel = document.getElementById('dbFilterOwner');
+  if (ownerSel) {
+    var curOwner = ownerSel.value;
+    ownerSel.innerHTML = '<option value="" style="color:var(--accent)">-- All Owners --</option>';
+    owners.sort().forEach(function(o) {
+      ownerSel.innerHTML += '<option value="' + o + '"' + (o === curOwner ? ' selected' : '') + ' style="color:var(--accent);font-weight:700;">' + o + '</option>';
+    });
+  }
+
+  // Filter entries
+  var filtered = entries;
+  if (filterCat !== 'all') filtered = filtered.filter(function(e) { return e.category === filterCat; });
+  if (filterOwner) filtered = filtered.filter(function(e) { return e.ownerName === filterOwner; });
+  if (search) filtered = filtered.filter(function(e) {
+    return (e.ownerName || '').toLowerCase().indexOf(search) !== -1 ||
+      (e.vehicleNo || '').toLowerCase().indexOf(search) !== -1 ||
+      (e.destination || '').toLowerCase().indexOf(search) !== -1 ||
+      (e.from || '').toLowerCase().indexOf(search) !== -1 ||
+      (e.to || '').toLowerCase().indexOf(search) !== -1 ||
+      (e.description || '').toLowerCase().indexOf(search) !== -1 ||
+      (e.biltyNumber || '').toLowerCase().indexOf(search) !== -1 ||
+      (e.containerNo || '').toLowerCase().indexOf(search) !== -1 ||
+      (e.dcNumber || '').toLowerCase().indexOf(search) !== -1 ||
+      (e.remarks || '').toLowerCase().indexOf(search) !== -1;
+  });
+
+  // Sort chronologically by date, fallback to id
+  filtered.sort(function(a, b) {
+    var dA = new Date(a.date || '1970-01-01'), dB = new Date(b.date || '1970-01-01');
+    if (dA.getTime() !== dB.getTime()) return dA.getTime() - dB.getTime();
+    return a.id - b.id;
+  });
+
+  var thead = document.getElementById('dbThead');
+  var tbody = document.getElementById('dbTbody');
+
+  // Determine which columns to display based on selected category
+  var displayFields;
+  var showCategoryCol = (filterCat === 'all');
+
+  if (filterCat === 'all') {
+    displayFields = ALL_CAT_SUMMARY_FIELDS;
+  } else {
+    displayFields = CAT_FIELDS[filterCat];
+  }
+
+  // Build thead
+  var headHtml = '<tr><th>#</th>';
+  if (showCategoryCol) headHtml += '<th>Category</th>';
+  displayFields.forEach(function(f) {
+    headHtml += '<th>' + f.label + '</th>';
+  });
+  headHtml += '<th>Invoice</th><th>Actions</th></tr>';
+  thead.innerHTML = headHtml;
+
+  if (filtered.length === 0) {
+    var colSpan = displayFields.length + (showCategoryCol ? 4 : 3);
+    tbody.innerHTML = '<tr><td colspan="' + colSpan + '" style="text-align:center;color:var(--text-muted);padding:30px;">No entries found.</td></tr>';
+    return;
+  }
+
+  // Build tbody — auto-sequential serial numbers based on chronological order
+  var html = '';
+  filtered.forEach(function(e, i) {
+    var invoiced = e.invoiceNo ? 'invoiced-row' : '';
+    var paidRow = (e.remarks && e.remarks.trim().toLowerCase() === 'paid') ? 'paid-row' : '';
+    var invBadge = e.invoiceNo ? '<span class="badge badge-green">Inv #' + e.invoiceNo + '</span>' : '<span class="badge badge-yellow">Unbilled</span>';
+
+    html += '<tr class="' + invoiced + ' ' + paidRow + '">';
+    html += '<td>' + (i + 1) + '</td>';
+
+    if (showCategoryCol) {
+      html += '<td><span class="badge badge-blue">' + (CAT_LABELS[e.category] || e.category) + '</span></td>';
+    }
+
+    displayFields.forEach(function(f) {
+      // For serialNo column, show auto-sequential number
+      if (f.key === 'serialNo') {
+        html += '<td>' + (i + 1) + '</td>';
+        return;
+      }
+      var cellVal = getCellDisplay(e, f);
+      var styleAttr = '';
+      if (f.type === 'balance') styleAttr = ' style="font-weight:700;color:var(--accent);"';
+      else if (f.type === 'number') styleAttr = ' style="font-weight:600;"';
+      html += '<td' + styleAttr + '>' + cellVal + '</td>';
+    });
+
+    html += '<td>' + invBadge + '</td>';
+    html += '<td>' +
+      '<button class="btn btn-outline btn-sm" onclick="editEntry(' + e.id + ')" title="Edit"><i class="fa-solid fa-pen"></i></button> ' +
+      '<button class="btn btn-danger btn-sm" onclick="deleteEntry(' + e.id + ')" title="Delete"><i class="fa-solid fa-trash"></i></button>' +
+      '</td></tr>';
+  });
+
+  tbody.innerHTML = html;
+}
+
+document.getElementById('dbFilterCat').addEventListener('change', renderDatabase);
+document.getElementById('dbFilterOwner').addEventListener('change', renderDatabase);
+document.getElementById('dbSearch').addEventListener('input', renderDatabase);
+
+// Export current DB view as CSV
+document.getElementById('dbExportBtn').addEventListener('click', function() {
+  var thead = document.getElementById('dbThead');
+  var tbody = document.getElementById('dbTbody');
+  var rows = [];
+  var thCells = thead.querySelectorAll('th');
+  var headerRow = [];
+  thCells.forEach(function(th) { headerRow.push('"' + th.textContent.replace(/"/g, '""') + '"'); });
+  rows.push(headerRow.join(','));
+
+  var trs = tbody.querySelectorAll('tr');
+  trs.forEach(function(tr) {
+    var tds = tr.querySelectorAll('td');
+    if (tds.length > 1) {
+      var row = [];
+      tds.forEach(function(td) { row.push('"' + td.textContent.replace(/"/g, '""').trim() + '"'); });
+      rows.push(row.join(','));
+    }
+  });
+
+  var blob = new Blob([rows.join('\n')], { type: 'text/csv' });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = 'NadirEnterprise_DB_' + todayStr() + '.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('CSV exported!');
+});
+
+// Edit entry — opens modal with category-specific form
+async function editEntry(id) {
+  var entry = await dbGet('entries', id);
+  if (!entry) { showToast('Entry not found!', 'error'); return; }
+
+  var fields = CAT_FIELDS[entry.category];
+  if (!fields) { showToast('Unknown category!', 'error'); return; }
+
+  var html = '<div class="form-grid">';
+  fields.forEach(function(f) {
+    if (f.type === 'balance') {
+      html += '<div class="form-group"><label>' + f.label + '</label><div class="balance-display" id="edit_balance">' + formatPKR(entry.balance) + '</div></div>';
+    } else {
+      var inputType = f.type === 'date' ? 'date' : f.type === 'number' ? 'number' : 'text';
+      var minAttr = f.type === 'number' ? ' min="0"' : '';
+      html += '<div class="form-group"><label>' + f.label + '</label><input type="' + inputType + '" id="edit_' + f.key + '" value="' + (entry[f.key] || '') + '"' + minAttr + ' oninput="updateEditBalance(\'' + entry.category + '\')"></div>';
+    }
+  });
+  html += '</div>';
+  html += '<div style="display:flex;gap:12px;margin-top:20px;">';
+  html += '<button class="btn btn-primary" onclick="saveEditEntry(' + id + ',\'' + entry.category + '\')"><i class="fa-solid fa-save"></i> Update</button>';
+  html += '<button class="btn btn-outline" onclick="closeEditModal()"><i class="fa-solid fa-xmark"></i> Cancel</button>';
+  html += '</div>';
+
+  document.getElementById('editFormArea').innerHTML = html;
+  document.getElementById('editModalTitle').textContent = 'Edit Entry \u2014 ' + CAT_LABELS[entry.category];
+  document.getElementById('editModal').classList.add('show');
+  setupArrowNav('editFormArea');
+}
+
+function updateEditBalance(category) {
+  var data = {};
+  var fields = CAT_FIELDS[category];
+  if (!fields) return;
+  fields.forEach(function(f) {
+    if (f.type !== 'balance') {
+      var el = document.getElementById('edit_' + f.key);
+      data[f.key] = el ? el.value : 0;
+    }
+  });
+  var bal = calcBalance(category, data);
+  var balEl = document.getElementById('edit_balance');
+  if (balEl) balEl.textContent = formatPKR(bal);
+}
+
+async function saveEditEntry(id, category) {
+  var entry = await dbGet('entries', id);
+  if (!entry) { showToast('Entry not found!', 'error'); return; }
+
+  var fields = CAT_FIELDS[category];
+  fields.forEach(function(f) {
+    if (f.type !== 'balance') {
+      var el = document.getElementById('edit_' + f.key);
+      entry[f.key] = el ? el.value : '';
+    }
+  });
+  entry.balance = calcBalance(category, entry);
+
+  try {
+    await dbPut('entries', entry);
+    closeEditModal();
+    showToast('Entry updated!');
+    renderDatabase();
+  } catch(err) {
+    showToast('Update error: ' + err.message, 'error');
+  }
+}
+
+function closeEditModal() { document.getElementById('editModal').classList.remove('show'); }
+
+async function deleteEntry(id) {
+  showConfirm('Are you sure you want to delete this entry?', async function() {
+    await dbDelete('entries', id);
+    showToast('Entry deleted!', 'info');
+    renderDatabase();
+  });
+}
+
+// ==================== OWNER SHEET ====================
+async function renderOwnerSheet() {
+  var entries = await dbGetAll('entries');
+  var owners = getUniqueOwners(entries);
+
+  var sel = document.getElementById('ownerSelect');
+  var currentVal = sel.value;
+  sel.innerHTML = '<option value="" style="color:var(--accent)">-- Select Owner --</option>';
+  owners.sort().forEach(function(o) {
+    sel.innerHTML += '<option value="' + o + '"' + (o === currentVal ? ' selected' : '') + ' style="color:var(--accent);font-weight:700;">' + o + '</option>';
+  });
+  renderOwnerLedger();
+}
+
+document.getElementById('ownerSelect').addEventListener('change', renderOwnerLedger);
+
+async function renderOwnerLedger() {
+  var ownerName = document.getElementById('ownerSelect').value;
+  var area = document.getElementById('ownerLedgerArea');
+
+  if (!ownerName) {
+    area.innerHTML = '<p style="color:var(--text-muted);margin-top:16px;">Select an owner to view their ledger.</p>';
+    return;
+  }
+
+  var entries = await dbGetAll('entries');
+  var payments = await dbGetAll('payments');
+
+  var ownerEntries = entries.filter(function(e) { return e.ownerName === ownerName; }).sort(function(a, b) { return new Date(a.date) - new Date(b.date); });
+  var ownerPayments = payments.filter(function(p) { return p.ownerName === ownerName; }).sort(function(a, b) { return new Date(a.date) - new Date(b.date); });
+
+  var ledger = [];
+  ownerEntries.forEach(function(e) {
+    ledger.push({
+      type: 'trip', date: e.date, category: e.category,
+      desc: CAT_LABELS[e.category] + ' \u2014 ' + (e.vehicleNo || ''),
+      freight: num(e.freight), advance: num(e.advance),
+      deductions: num(e.dieselAmount) + num(e.munshiyana),
+      detention: num(e.detention), balance: num(e.balance), invoiceNo: e.invoiceNo
+    });
+  });
+  ownerPayments.forEach(function(p) {
+    ledger.push({
+      type: 'payment', date: p.date, category: '',
+      desc: p.description || 'Payment',
+      freight: 0, advance: 0, deductions: 0, detention: 0,
+      balance: -num(p.amount), invoiceNo: null
+    });
+  });
+
+  ledger.sort(function(a, b) { return new Date(a.date) - new Date(b.date); });
+
+  var running = 0;
+  ledger.forEach(function(l) { running += l.balance; l.runningBalance = running; });
+
+  var totalBalance = ownerEntries.reduce(function(s, e) { return s + num(e.balance); }, 0);
+  var totalPayments = ownerPayments.reduce(function(s, p) { return s + num(p.amount); }, 0);
+  var outstanding = totalBalance - totalPayments;
+
+  var html = '<div class="glass" style="padding:24px;margin-top:16px;">';
+  html += '<h4 style="color:var(--accent);margin-bottom:6px;">Owner: ' + ownerName + '</h4>';
+  html += '<div style="display:flex;gap:24px;flex-wrap:wrap;margin-bottom:20px;">';
+  html += '<div><span style="color:var(--text-muted);font-size:12px;">TOTAL TRIPS</span><div style="font-size:22px;font-weight:700;">' + ownerEntries.length + '</div></div>';
+  html += '<div><span style="color:var(--text-muted);font-size:12px;">TOTAL BALANCE</span><div style="font-size:22px;font-weight:700;color:var(--accent);">' + formatPKR(totalBalance) + '</div></div>';
+  html += '<div><span style="color:var(--text-muted);font-size:12px;">TOTAL PAYMENTS</span><div style="font-size:22px;font-weight:700;color:var(--warning);">' + formatPKR(totalPayments) + '</div></div>';
+  html += '<div><span style="color:var(--text-muted);font-size:12px;">OUTSTANDING</span><div style="font-size:22px;font-weight:700;color:' + (outstanding >= 0 ? 'var(--accent)' : 'var(--danger)') + ';">' + formatPKR(outstanding) + '</div></div>';
+  html += '</div>';
+
+  html += '<div class="table-wrap"><table><thead><tr><th>#</th><th>Date</th><th>Type</th><th>Description</th><th>Freight</th><th>Advance</th><th>Deductions</th><th>Detention</th><th>Balance</th><th>Running Bal</th><th>Invoice</th></tr></thead><tbody>';
+
+  ledger.forEach(function(l, i) {
+    var rowStyle = l.type === 'payment' ? ' style="background:rgba(255,193,7,0.06)"' : '';
+    var typeBadge = l.type === 'trip' ? '<span class="badge badge-blue">Trip</span>' : '<span class="badge badge-yellow">Payment</span>';
+    var invBadge = l.invoiceNo ? '<span class="badge badge-green">#' + l.invoiceNo + '</span>' : '-';
+    html += '<tr' + rowStyle + '><td>' + (i + 1) + '</td><td>' + formatDate(l.date) + '</td><td>' + typeBadge + '</td><td>' + l.desc + '</td><td>' + (l.freight ? formatPKR(l.freight) : '-') + '</td><td>' + (l.advance ? formatPKR(l.advance) : '-') + '</td><td>' + (l.deductions ? formatPKR(l.deductions) : '-') + '</td><td>' + (l.detention ? formatPKR(l.detention) : '-') + '</td><td style="font-weight:600;">' + formatPKR(l.balance) + '</td><td class="running-bal">' + formatPKR(l.runningBalance) + '</td><td>' + invBadge + '</td></tr>';
+  });
+
+  html += '</tbody></table></div></div>';
+  area.innerHTML = html;
+}
+
+// ==================== PAYMENTS ====================
+async function renderPayments() {
+  var entries = await dbGetAll('entries');
+  var payments = await dbGetAll('payments');
+  var owners = getUniqueOwners(entries);
+
+  var sel = document.getElementById('payOwner');
+  sel.innerHTML = '<option value="" style="color:var(--accent)">-- Select Owner --</option>';
+  var allOwnerSet = new Set(owners);
+  payments.forEach(function(p) { if (p.ownerName) allOwnerSet.add(p.ownerName); });
+  Array.from(allOwnerSet).sort().forEach(function(o) {
+    sel.innerHTML += '<option value="' + o + '" style="color:var(--accent);font-weight:700;">' + o + '</option>';
+  });
+
+  document.getElementById('payDate').value = todayStr();
+
+  var tbody = document.getElementById('payTbody');
+  payments.sort(function(a, b) { return b.id - a.id; });
+
+  if (payments.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:30px;">No payments recorded.</td></tr>';
+    return;
+  }
+
+  var html = '';
+  payments.forEach(function(p, i) {
+    html += '<tr><td>' + (i + 1) + '</td><td>' + formatDate(p.date) + '</td><td>' + (p.ownerName || '-') + '</td><td>' + (p.description || '-') + '</td><td style="font-weight:700;color:var(--warning);">' + formatPKR(p.amount) + '</td><td><button class="btn btn-outline btn-sm" onclick="editPayment(' + p.id + ')" title="Edit"><i class="fa-solid fa-pen"></i></button> <button class="btn btn-danger btn-sm" onclick="deletePayment(' + p.id + ')" title="Delete"><i class="fa-solid fa-trash"></i></button></td></tr>';
+  });
+  tbody.innerHTML = html;
+}
+
+async function addPayment() {
+  var date = document.getElementById('payDate').value;
+  var ownerName = document.getElementById('payOwner').value;
+  var description = document.getElementById('payDesc').value;
+  var amount = document.getElementById('payAmount').value;
+
+  if (!ownerName) { showToast('Please select an owner!', 'error'); return; }
+  if (!amount || num(amount) <= 0) { showToast('Please enter a valid amount!', 'error'); return; }
+
+  try {
+    await dbAdd('payments', { date: date, ownerName: ownerName, description: description, amount: num(amount), createdAt: new Date().toISOString() });
+    showToast('Payment recorded!');
+    document.getElementById('payDesc').value = '';
+    document.getElementById('payAmount').value = '';
+    renderPayments();
+  } catch(err) { showToast('Payment error: ' + err.message, 'error'); }
+}
+
+async function deletePayment(id) {
+  showConfirm('Delete this payment?', async function() {
+    await dbDelete('payments', id);
+    showToast('Payment deleted!', 'info');
+    renderPayments();
+  });
+}
+
+function editPayment(id) {
+  dbGet('payments', id).then(function(p) {
+    if (!p) { showToast('Payment not found!', 'error'); return; }
+    var html = '<div class="form-grid">';
+    html += '<div class="form-group"><label>Date</label><input type="date" id="editpay_date" value="' + (p.date || '') + '"></div>';
+    html += '<div class="form-group"><label>Owner Name</label><input type="text" id="editpay_owner" value="' + (p.ownerName || '') + '"></div>';
+    html += '<div class="form-group"><label>Description / Reference</label><input type="text" id="editpay_desc" value="' + (p.description || '') + '"></div>';
+    html += '<div class="form-group"><label>Amount (PKR)</label><input type="number" id="editpay_amount" value="' + (p.amount || 0) + '" min="0"></div>';
+    html += '</div>';
+    html += '<div style="display:flex;gap:12px;margin-top:20px;">';
+    html += '<button class="btn btn-primary" onclick="saveEditPayment(' + id + ')"><i class="fa-solid fa-save"></i> Update</button>';
+    html += '<button class="btn btn-outline" onclick="closeEditModal()"><i class="fa-solid fa-xmark"></i> Cancel</button>';
+    html += '</div>';
+    document.getElementById('editFormArea').innerHTML = html;
+    document.getElementById('editModalTitle').textContent = 'Edit Payment';
+    document.getElementById('editModal').classList.add('show');
+  });
+}
+
+async function saveEditPayment(id) {
+  var p = await dbGet('payments', id);
+  if (!p) { showToast('Payment not found!', 'error'); return; }
+  p.date = document.getElementById('editpay_date').value;
+  p.ownerName = document.getElementById('editpay_owner').value;
+  p.description = document.getElementById('editpay_desc').value;
+  p.amount = num(document.getElementById('editpay_amount').value);
+  if (!p.ownerName || !p.ownerName.trim()) { showToast('Owner Name is required!', 'error'); return; }
+  if (p.amount <= 0) { showToast('Please enter a valid amount!', 'error'); return; }
+  try {
+    await dbPut('payments', p);
+    closeEditModal();
+    showToast('Payment updated!');
+    renderPayments();
+  } catch(err) { showToast('Update error: ' + err.message, 'error'); }
+}
+
+// ==================== INVOICE ====================
+async function renderInvoice() {
+  var entries = await dbGetAll('entries');
+  var owners = getUniqueOwners(entries);
+  var sel = document.getElementById('invOwner');
+  sel.innerHTML = '<option value="" style="color:var(--accent)">-- Select Owner --</option>';
+  owners.sort().forEach(function(o) { sel.innerHTML += '<option value="' + o + '" style="color:var(--accent);font-weight:700;">' + o + '</option>'; });
+  renderInvoiceList();
+}
+
+async function generateInvoice() {
+  var ownerName = document.getElementById('invOwner').value;
+  var fromDate = document.getElementById('invFromDate').value;
+  var toDate = document.getElementById('invToDate').value;
+
+  if (!ownerName) { showToast('Please select an owner!', 'error'); return; }
+  if (!fromDate || !toDate) { showToast('Please select date range!', 'error'); return; }
+
+  var allEntries = await dbGetAll('entries');
+  var filtered = allEntries.filter(function(e) {
+    return e.ownerName === ownerName && e.date >= fromDate && e.date <= toDate && !e.invoiceNo;
+  });
+
+  if (filtered.length === 0) {
+    showToast('No uninvoiced entries found for this owner in the selected date range.', 'error');
+    return;
+  }
+
+  var invoices = await dbGetAll('invoices');
+  var nextInvNo = invoices.length > 0 ? Math.max.apply(null, invoices.map(function(inv) { return inv.invoiceNo; })) + 1 : 1;
+
+  try {
+    await dbAdd('invoices', { invoiceNo: nextInvNo, ownerName: ownerName, fromDate: fromDate, toDate: toDate, entryIds: filtered.map(function(e) { return e.id; }), createdAt: new Date().toISOString() });
+
+    for (var i = 0; i < filtered.length; i++) {
+      filtered[i].invoiceNo = nextInvNo;
+      await dbPut('entries', filtered[i]);
+    }
+
+    showToast('Invoice #' + nextInvNo + ' generated with ' + filtered.length + ' entries!');
+    viewInvoice(nextInvNo);
+    renderInvoiceList();
+  } catch(err) { showToast('Invoice error: ' + err.message, 'error'); }
+}
+
+async function renderInvoiceList() {
+  var invoices = await dbGetAll('invoices');
+  var payments = await dbGetAll('payments');
+  var entries = await dbGetAll('entries');
+  invoices.sort(function(a, b) { return a.invoiceNo - b.invoiceNo; });
+
+  var tbody = document.getElementById('invTbody');
+  if (invoices.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--text-muted);padding:30px;">No invoices generated yet.</td></tr>';
+    return;
+  }
+
+  var html = '';
+  invoices.forEach(function(inv) {
+    var invEntries = entries.filter(function(e) { return e.invoiceNo === inv.invoiceNo; });
+    var totalBalance = invEntries.reduce(function(s, e) { return s + num(e.balance); }, 0);
+    var invPayments = payments.filter(function(p) { return p.ownerName === inv.ownerName && p.date >= inv.fromDate && p.date <= inv.toDate; });
+    var totalPayments = invPayments.reduce(function(s, p) { return s + num(p.amount); }, 0);
+    var net = totalBalance - totalPayments;
+    html += '<tr><td><span class="badge badge-green">#' + inv.invoiceNo + '</span></td><td>' + inv.ownerName + '</td><td>' + formatDate(inv.fromDate) + '</td><td>' + formatDate(inv.toDate) + '</td><td>' + invEntries.length + '</td><td>' + formatPKR(totalBalance) + '</td><td>' + formatPKR(totalPayments) + '</td><td style="font-weight:700;color:' + (net >= 0 ? 'var(--accent)' : 'var(--danger)') + '">' + formatPKR(net) + '</td><td><button class="btn btn-outline btn-sm" onclick="viewInvoice(' + inv.invoiceNo + ')" title="View"><i class="fa-solid fa-eye"></i></button> <button class="btn btn-outline btn-sm" onclick="printInvoice(' + inv.invoiceNo + ')" title="Print"><i class="fa-solid fa-print"></i></button> <button class="btn btn-danger btn-sm" onclick="deleteInvoice(' + inv.invoiceNo + ')" title="Delete"><i class="fa-solid fa-trash"></i></button></td></tr>';
+  });
+  tbody.innerHTML = html;
+}
+
+async function viewInvoice(invoiceNo) {
+  var entries = await dbGetAll('entries');
+  var payments = await dbGetAll('payments');
+  var invoices = await dbGetAll('invoices');
+  var inv = invoices.find(function(i) { return i.invoiceNo === invoiceNo; });
+  if (!inv) { showToast('Invoice not found!', 'error'); return; }
+
+  var invEntries = entries.filter(function(e) { return e.invoiceNo === invoiceNo; }).sort(function(a, b) { return new Date(a.date) - new Date(b.date); });
+  var invPayments = payments.filter(function(p) { return p.ownerName === inv.ownerName && p.date >= inv.fromDate && p.date <= inv.toDate; });
+  var totalFreight = invEntries.reduce(function(s, e) { return s + num(e.freight); }, 0);
+  var totalAdvance = invEntries.reduce(function(s, e) { return s + num(e.advance); }, 0);
+  var totalDetention = invEntries.reduce(function(s, e) { return s + num(e.detention); }, 0);
+  var totalDiesel = invEntries.reduce(function(s, e) { return s + num(e.dieselAmount); }, 0);
+  var totalMunshiyana = invEntries.reduce(function(s, e) { return s + num(e.munshiyana); }, 0);
+  var totalBalance = invEntries.reduce(function(s, e) { return s + num(e.balance); }, 0);
+  var totalPayments = invPayments.reduce(function(s, p) { return s + num(p.amount); }, 0);
+  var netAmount = totalBalance - totalPayments;
+
+  // Auto-resize text based on number of entries
+  var entryCount = invEntries.length;
+  var tfs, ths, tds, sumfs, netfs, padH, padV;
+  if (entryCount > 15) { tfs='9px'; ths='9px'; tds='5px 6px'; sumfs='10px'; netfs='13px'; padH='6px'; padV='4px'; }
+  else if (entryCount > 8) { tfs='11px'; ths='11px'; tds='5px 7px'; sumfs='12px'; netfs='15px'; padH='7px'; padV='5px'; }
+  else { tfs='13px'; ths='13px'; tds='6px 8px'; sumfs='14px'; netfs='18px'; padH='8px'; padV='8px'; }
+
+  var html = '<div class="invoice-preview" id="invoicePrintArea" data-tfs="' + tfs + '" data-ths="' + ths + '" data-tds="' + tds + '" data-sumfs="' + sumfs + '" data-netfs="' + netfs + '" data-padH="' + padH + '" data-padV="' + padV + '">';
+  html += '<div style="text-align:center;border-bottom:3px solid #111;padding-bottom:16px;margin-bottom:20px;">';
+  html += '<h2 style="margin:0;font-family:Orbitron,sans-serif;letter-spacing:2px;font-size:' + netfs + ';">NADIR ENTERPRISE</h2>';
+  html += '<p style="margin:4px 0 0;color:#555;font-size:' + sumfs + ';">Transport Management System</p></div>';
+
+  html += '<div style="display:flex;justify-content:space-between;margin-bottom:20px;font-size:' + sumfs + ';">';
+  html += '<div><strong>Invoice #:</strong> ' + invoiceNo + '<br><strong>Owner:</strong> ' + inv.ownerName + '</div>';
+  html += '<div style="text-align:right;"><strong>From:</strong> ' + formatDate(inv.fromDate) + '<br><strong>To:</strong> ' + formatDate(inv.toDate) + '<br><strong>Generated:</strong> ' + formatDate((inv.createdAt || '').split('T')[0]) + '</div></div>';
+
+  html += '<table style="width:100%;border-collapse:collapse;font-size:' + tfs + ';margin-bottom:20px;">';
+  html += '<thead><tr style="background:#f0f0f0;"><th style="padding:' + padH + ';border:1px solid #ddd;text-align:left;font-size:' + ths + ';">#</th><th style="padding:' + padH + ';border:1px solid #ddd;text-align:left;font-size:' + ths + ';">Date</th><th style="padding:' + padH + ';border:1px solid #ddd;text-align:left;font-size:' + ths + ';">Category</th><th style="padding:' + padH + ';border:1px solid #ddd;text-align:left;font-size:' + ths + ';">Vehicle</th><th style="padding:' + padH + ';border:1px solid #ddd;text-align:left;font-size:' + ths + ';">Route/Desc</th><th style="padding:' + padH + ';border:1px solid #ddd;text-align:right;font-size:' + ths + ';">Freight</th><th style="padding:' + padH + ';border:1px solid #ddd;text-align:right;font-size:' + ths + ';">Advance</th><th style="padding:' + padH + ';border:1px solid #ddd;text-align:right;font-size:' + ths + ';">Detention</th><th style="padding:' + padH + ';border:1px solid #ddd;text-align:right;font-size:' + ths + ';">Balance</th><th style="padding:' + padH + ';border:1px solid #ddd;text-align:center;font-size:' + ths + ';">Edit</th></tr></thead><tbody>';
+
+  invEntries.forEach(function(e, i) {
+    var route = [e.from, e.to, e.destination, e.description].filter(Boolean).join(' \u2192 ') || '-';
+    html += '<tr><td style="padding:' + tds + ';border:1px solid #e0e0e0;">' + (i + 1) + '</td><td style="padding:' + tds + ';border:1px solid #e0e0e0;">' + formatDate(e.date) + '</td><td style="padding:' + tds + ';border:1px solid #e0e0e0;">' + CAT_LABELS[e.category] + '</td><td style="padding:' + tds + ';border:1px solid #e0e0e0;">' + (e.vehicleNo || '-') + '</td><td style="padding:' + tds + ';border:1px solid #e0e0e0;">' + route + '</td><td style="padding:' + tds + ';border:1px solid #e0e0e0;text-align:right;">' + formatPKR(e.freight) + '</td><td style="padding:' + tds + ';border:1px solid #e0e0e0;text-align:right;">' + formatPKR(e.advance) + '</td><td style="padding:' + tds + ';border:1px solid #e0e0e0;text-align:right;">' + formatPKR(e.detention) + '</td><td style="padding:' + tds + ';border:1px solid #e0e0e0;text-align:right;font-weight:700;">' + formatPKR(e.balance) + '</td><td style="padding:' + tds + ';border:1px solid #e0e0e0;text-align:center;"><button class="btn btn-outline btn-sm" style="background:#fff;color:#111;border-color:#999;" onclick="editEntry(' + e.id + ')" title="Edit entry"><i class="fa-solid fa-pen"></i></button></td></tr>';
+  });
+  html += '</tbody></table>';
+
+  html += '<div style="border:2px solid #111;border-radius:8px;padding:12px;margin-bottom:16px;">';
+  html += '<table style="width:100%;font-size:' + sumfs + ';">';
+  html += '<tr><td style="padding:3px 0;">Total Freight:</td><td style="text-align:right;font-weight:600;">' + formatPKR(totalFreight) + '</td></tr>';
+  html += '<tr><td style="padding:3px 0;">Total Advance:</td><td style="text-align:right;font-weight:600;">(' + formatPKR(totalAdvance) + ')</td></tr>';
+  if (totalDiesel > 0) html += '<tr><td style="padding:3px 0;">Total Diesel:</td><td style="text-align:right;font-weight:600;">(' + formatPKR(totalDiesel) + ')</td></tr>';
+  if (totalMunshiyana > 0) html += '<tr><td style="padding:3px 0;">Total Munshiyana:</td><td style="text-align:right;font-weight:600;">(' + formatPKR(totalMunshiyana) + ')</td></tr>';
+  html += '<tr><td style="padding:3px 0;">Total Detention:</td><td style="text-align:right;font-weight:600;">' + formatPKR(totalDetention) + '</td></tr>';
+  html += '<tr style="border-top:2px solid #111;"><td style="padding:6px 0;font-weight:700;font-size:' + netfs + ';">Total Balance:</td><td style="text-align:right;font-weight:700;font-size:' + netfs + ';">' + formatPKR(totalBalance) + '</td></tr>';
+
+  if (invPayments.length > 0) {
+    html += '<tr><td colspan="2" style="padding:10px 0 4px;font-weight:700;color:#333;">Payments in Period:</td></tr>';
+    invPayments.forEach(function(p) {
+      html += '<tr><td style="padding:2px 0 2px 16px;color:#555;">' + formatDate(p.date) + ' \u2014 ' + (p.description || 'Payment') + '</td><td style="text-align:right;font-weight:600;">(' + formatPKR(p.amount) + ')</td></tr>';
+    });
+    html += '<tr style="border-top:1px solid #999;"><td style="padding:3px 0;font-weight:700;">Total Payments:</td><td style="text-align:right;font-weight:700;">(' + formatPKR(totalPayments) + ')</td></tr>';
+  }
+
+  html += '<tr style="border-top:3px double #111;"><td style="padding:8px 0;font-weight:900;font-size:' + netfs + ';">NET AMOUNT PAYABLE:</td><td style="text-align:right;font-weight:900;font-size:' + netfs + ';color:' + (netAmount >= 0 ? '#008000' : '#c62828') + ';">' + formatPKR(netAmount) + '</td></tr>';
+  html += '</table></div>';
+  html += '<div style="text-align:center;color:#999;font-size:10px;margin-top:16px;">This is a system-generated invoice from NADIR ENTERPRISE Transport Management System.</div></div>';
+
+  html += '<div style="text-align:center;margin-top:16px;display:flex;gap:12px;justify-content:center;">';
+  html += '<button class="btn btn-primary" onclick="printInvoice(' + invoiceNo + ')"><i class="fa-solid fa-print"></i> Print / Save PDF</button>';
+  html += '<button class="btn btn-outline" onclick="document.getElementById(\'invoicePreviewArea\').innerHTML=\'\'"><i class="fa-solid fa-xmark"></i> Close Preview</button></div>';
+
+  document.getElementById('invoicePreviewArea').innerHTML = html;
+  document.getElementById('invoicePreviewArea').scrollIntoView({ behavior: 'smooth' });
+}
+
+function printInvoice(invoiceNo) {
+  var content = document.getElementById('invoicePrintArea');
+  if (!content) { viewInvoice(invoiceNo).then(function() { setTimeout(function() { printInvoice(invoiceNo); }, 500); }); return; }
+  var tfs = content.getAttribute('data-tfs') || '13px';
+  var ths = content.getAttribute('data-ths') || '13px';
+  var sumfs = content.getAttribute('data-sumfs') || '14px';
+  var netfs = content.getAttribute('data-netfs') || '18px';
+  var win = window.open('', '_blank');
+  win.document.write('<!DOCTYPE html><html><head><title>Invoice #' + invoiceNo + ' - NADIR ENTERPRISE</title><style>body{font-family:Segoe UI,Arial,sans-serif;margin:30px;color:#111;font-size:' + tfs + ';}table{width:100%;border-collapse:collapse;font-size:' + tfs + ';}th,td{padding:6px 8px;border:1px solid #ddd;text-align:left;}th{background:#f5f5f5;font-size:' + ths + ';}@media print{body{margin:10px;}}</style></head><body>' + content.innerHTML + '</body></html>');
+  win.document.close();
+  setTimeout(function() { win.print(); }, 600);
+}
+
+async function deleteInvoice(invoiceNo) {
+  showConfirm('Delete Invoice #' + invoiceNo + '? Entries will be marked as unbilled and invoice numbers will be renumbered.', async function() {
+    var entries = await dbGetAll('entries');
+    var invoices = await dbGetAll('invoices');
+
+    var affectedEntries = entries.filter(function(e) { return e.invoiceNo === invoiceNo; });
+    for (var i = 0; i < affectedEntries.length; i++) {
+      affectedEntries[i].invoiceNo = null;
+      await dbPut('entries', affectedEntries[i]);
+    }
+
+    var inv = invoices.find(function(i) { return i.invoiceNo === invoiceNo; });
+    if (inv) await dbDelete('invoices', inv.id);
+
+    var remainingInvoices = invoices.filter(function(i) { return i.invoiceNo !== invoiceNo; }).sort(function(a, b) { return a.invoiceNo - b.invoiceNo; });
+    var updatedEntries = await dbGetAll('entries');
+
+    for (var j = 0; j < remainingInvoices.length; j++) {
+      var newNo = j + 1;
+      var oldNo = remainingInvoices[j].invoiceNo;
+      if (oldNo !== newNo) {
+        var entriesWithOldNo = updatedEntries.filter(function(e) { return e.invoiceNo === oldNo; });
+        for (var k = 0; k < entriesWithOldNo.length; k++) {
+          entriesWithOldNo[k].invoiceNo = newNo;
+          await dbPut('entries', entriesWithOldNo[k]);
+        }
+        remainingInvoices[j].invoiceNo = newNo;
+        await dbPut('invoices', remainingInvoices[j]);
+      }
+    }
+
+    showToast('Invoice deleted and renumbered!', 'info');
+    document.getElementById('invoicePreviewArea').innerHTML = '';
+    renderInvoiceList();
+  });
+}
+
+// ==================== SETTINGS ====================
+function renderSettings() {
+  var tGrid = document.getElementById('themeGrid');
+  tGrid.innerHTML = '';
+  THEMES.forEach(function(t, i) {
+    tGrid.innerHTML += '<div class="theme-swatch ' + (i === appSettings.theme ? 'active' : '') + '" style="background:' + t.bg + ';" onclick="applyTheme(' + i + ')" title="' + t.name + '"><span>' + t.name + '</span></div>';
+  });
+
+  var fList = document.getElementById('fontList');
+  fList.innerHTML = '';
+  FONTS.forEach(function(f, i) {
+    fList.innerHTML += '<div class="font-item glass ' + (i === appSettings.font ? 'active' : '') + '" onclick="applyFont(' + i + ')" title="' + f.name + '"><span style="font-family:' + f.family + '">' + f.name + '</span></div>';
+  });
+
+  document.getElementById('modeToggle').checked = !appSettings.darkMode;
+}
+
+async function applyTheme(index) {
+  appSettings.theme = index;
+  var t = THEMES[index];
+  document.documentElement.style.setProperty('--bg-gradient', t.bg);
+  document.documentElement.style.setProperty('--accent', t.accent);
+  document.documentElement.style.setProperty('--accent-dim', hexToRgba(t.accent, 0.15));
+  document.documentElement.style.setProperty('--accent-glow', hexToRgba(t.accent, 0.4));
+  document.documentElement.style.setProperty('--glass-bg', t.glass);
+  document.documentElement.style.setProperty('--glass-border', t.border);
+  document.body.style.background = t.bg;
+  try { await dbPut('settings', { key: 'theme', value: index }); } catch(e) {}
+  renderSettings();
+  showToast('Theme: ' + t.name);
+}
+
+async function applyFont(index) {
+  appSettings.font = index;
+  document.documentElement.style.setProperty('--font-family', FONTS[index].family);
+  document.body.style.fontFamily = FONTS[index].family;
+  try { await dbPut('settings', { key: 'font', value: index }); } catch(e) {}
+  renderSettings();
+  showToast('Font: ' + FONTS[index].name);
+}
+
+document.getElementById('modeToggle').addEventListener('change', async function() {
+  appSettings.darkMode = !this.checked;
+  document.body.classList.toggle('light-mode', !appSettings.darkMode);
+  try { await dbPut('settings', { key: 'darkMode', value: appSettings.darkMode }); } catch(e) {}
+  showToast(appSettings.darkMode ? 'Night Mood' : 'Daylight Mode');
+});
+
+// ==================== DATA MANAGEMENT ====================
+async function exportData() {
+  try {
+    var entries = await dbGetAll('entries');
+    var payments = await dbGetAll('payments');
+    var invoices = await dbGetAll('invoices');
+    var data = { entries: entries, payments: payments, invoices: invoices, exportedAt: new Date().toISOString() };
+    var blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url; a.download = 'NadirEnterprise_Backup_' + todayStr() + '.json';
+    a.click(); URL.revokeObjectURL(url);
+    showToast('Backup exported successfully!');
+  } catch(err) { showToast('Export error: ' + err.message, 'error'); }
+}
+
+async function importData(event) {
+  var file = event.target.files[0];
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = async function(e) {
+    try {
+      var data = JSON.parse(e.target.result);
+      if (!data.entries || !data.payments || !data.invoices) throw new Error('Invalid backup file');
+      showConfirm('This will replace ALL current data. Continue?', async function() {
+        await dbClear('entries'); await dbClear('payments'); await dbClear('invoices');
+        for (var i = 0; i < data.entries.length; i++) { var en = Object.assign({}, data.entries[i]); delete en.id; await dbAdd('entries', en); }
+        for (var j = 0; j < data.payments.length; j++) { var pa = Object.assign({}, data.payments[j]); delete pa.id; await dbAdd('payments', pa); }
+        for (var k = 0; k < data.invoices.length; k++) { var inv = Object.assign({}, data.invoices[k]); delete inv.id; await dbAdd('invoices', inv); }
+        showToast('Data restored successfully!');
+        switchTab(currentTab);
+      });
+    } catch(err) { showToast('Invalid backup file: ' + err.message, 'error'); }
+  };
+  reader.readAsText(file);
+  event.target.value = '';
+}
+
+function clearDatabase() {
+  showConfirm('This will PERMANENTLY delete ALL data. Are you absolutely sure?', function() {
+    showConfirm('FINAL WARNING: All entries, payments, and invoices will be lost forever!', async function() {
+      await dbClear('entries'); await dbClear('payments'); await dbClear('invoices');
+      showToast('Database cleared!', 'info');
+      switchTab(currentTab);
+    });
+  });
+}
+
+// ==================== INIT ====================
+async function initApp() {
+  try { await openDB(); } catch(err) { console.error('DB open error:', err); showToast('Database error: ' + err.message, 'error'); return; }
+
+  try {
+    var ts = await dbGet('settings', 'theme');
+    if (ts !== undefined && ts !== null) { appSettings.theme = ts.value; applyTheme(appSettings.theme); } else applyTheme(0);
+    var fs = await dbGet('settings', 'font');
+    if (fs !== undefined && fs !== null) { appSettings.font = fs.value; applyFont(appSettings.font); } else applyFont(0);
+    var ms = await dbGet('settings', 'darkMode');
+    if (ms !== undefined && ms !== null && ms.value === false) {
+      appSettings.darkMode = false;
+      document.body.classList.add('light-mode');
+      document.getElementById('modeToggle').checked = true;
+    }
+    var lds = await dbGet('settings', 'lastDate');
+    if (lds !== undefined && lds !== null && lds.value) { lastSelectedDate = lds.value; }
+  } catch(e) { applyTheme(0); applyFont(0); }
+
+  renderDashboard();
+
+  setTimeout(function() {
+    var splash = document.getElementById('splash');
+    splash.classList.add('hide');
+    setTimeout(function() { splash.style.display = 'none'; }, 900);
+  }, 3500);
+}
+
+initApp();
+</script>
+</body>
+</html>
