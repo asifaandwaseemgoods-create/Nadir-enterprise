@@ -1,12 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<link rel="manifest" href="manifest.json">
-<script>
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('sw.js');
-  }
-</script><meta charset="UTF-8">
+<!-- Firebase SDKs - MUST be loaded before your app script -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+
+<meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>NADIR ENTERPRISE - Transport Management System</title>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;500;600;700&family=Exo+2:wght@100;300;400;600;700;900&family=Audiowide&family=Bungee&family=Teko:wght@300;400;600;700&family=Russo+One&family=Black+Ops+One&family=Michroma&family=Saira+Stencil+One&family=Quantico:wght@400;700&family=Chakra+Petch:wght@300;400;600;700&family=Jura:wght@300;400;600;700&family=Oxanium:wght@200;400;600;700;800&family=Aldrich&display=swap" rel="stylesheet">
@@ -51,6 +50,14 @@ body{font-family:var(--font-family);background:var(--bg-gradient);color:var(--te
 #splash .splash-bar{width:200px;height:3px;background:rgba(255,255,255,.1);border-radius:3px;margin-top:40px;overflow:hidden;}
 #splash .splash-bar-fill{height:100%;width:0;background:var(--accent);border-radius:3px;animation:fillBar 3s ease forwards;}
 @keyframes fillBar{to{width:100%;}}
+
+.sync-badge{position:fixed;top:12px;right:12px;z-index:200;padding:6px 16px;border-radius:20px;font-size:12px;font-weight:700;display:flex;align-items:center;gap:6px;transition:all .3s;}
+.sync-badge.online{background:rgba(0,230,118,.2);color:#00e676;border:1px solid rgba(0,230,118,.3);}
+.sync-badge.offline{background:rgba(255,193,7,.2);color:#ffc107;border:1px solid rgba(255,193,7,.3);}
+.sync-badge .dot{width:8px;height:8px;border-radius:50%;animation:pulseDot 1.5s ease-in-out infinite;}
+.sync-badge.online .dot{background:#00e676;}
+.sync-badge.offline .dot{background:#ffc107;}
+@keyframes pulseDot{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.4;transform:scale(.7);}}
 
 .glass{background:var(--glass-bg);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid var(--glass-border);border-radius:var(--radius);box-shadow:var(--card-shadow);transition:background .4s,border-color .4s,box-shadow .4s;}
 .glass-hover:hover{border-color:var(--accent);box-shadow:0 0 20px var(--accent-glow),var(--card-shadow);transform:translateY(-2px);}
@@ -124,6 +131,9 @@ body{font-family:var(--font-family);background:var(--bg-gradient);color:var(--te
 .btn-outline:hover{border-color:var(--accent);color:var(--accent);}
 .btn-sm{padding:6px 14px;font-size:12px;}
 
+.date-filter-box{padding:20px;margin-bottom:16px;border:2px solid var(--accent);box-shadow:0 0 20px var(--accent-glow);}
+.date-filter-box h4{color:var(--accent);margin-bottom:12px;display:flex;align-items:center;gap:8px;}
+
 .table-wrap{overflow-x:auto;margin-top:16px;border-radius:var(--radius);}
 table{width:100%;border-collapse:collapse;font-size:13px;}
 thead th{background:rgba(255,255,255,.05);padding:10px 12px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--text-muted);border-bottom:1px solid var(--glass-border);position:sticky;top:0;z-index:2;white-space:nowrap;}
@@ -139,7 +149,6 @@ tbody tr.paid-row td:first-child::after{content:'✓';display:inline-block;margi
 .badge-yellow{background:rgba(255,193,7,.2);color:#ffc107;}
 .badge-red{background:rgba(255,82,82,.2);color:#ff5252;}
 .badge-blue{background:rgba(0,188,212,.2);color:#00bcd4;}
-.badge-cat{padding:4px 12px;font-size:11px;font-weight:700;border-radius:6px;letter-spacing:.5px;}
 
 .running-bal{font-weight:700;color:var(--accent);}
 
@@ -195,9 +204,6 @@ body.light-mode #sidebar{background:rgba(255,255,255,.7);}
 body.light-mode .modal-box{background:rgba(255,255,255,.85);}
 body.light-mode table thead th{background:rgba(0,0,0,.04);}
 body.light-mode .form-group input,body.light-mode .form-group select{background:rgba(0,0,0,.04);border-color:rgba(0,0,0,.12);color:#1a1a2e;}
-body.light-mode .toast-success{background:rgba(0,180,90,.9);color:#fff;}
-body.light-mode .toast-error{background:rgba(200,40,40,.9);color:#fff;}
-body.light-mode .toast-info{background:rgba(0,150,180,.9);color:#fff;}
 
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important;}}
 </style>
@@ -212,6 +218,9 @@ body.light-mode .toast-info{background:rgba(0,150,180,.9);color:#fff;}
   <h2>Transport Management System</h2>
   <div class="splash-bar"><div class="splash-bar-fill"></div></div>
 </div>
+
+<!-- Sync status badge -->
+<div class="sync-badge offline" id="syncBadge"><span class="dot"></span> <span id="syncText">Connecting...</span></div>
 
 <div class="toast-container" id="toastContainer"></div>
 
@@ -241,7 +250,7 @@ body.light-mode .toast-info{background:rgba(0,150,180,.9);color:#fff;}
     <div class="nav-item" data-tab="invoice"><i class="fa-solid fa-file-invoice-dollar"></i> Invoice</div>
     <div class="nav-item" data-tab="settings"><i class="fa-solid fa-gear"></i> Settings</div>
   </nav>
-  <div class="sidebar-footer">v2.0 &mdash; NADIR ENTERPRISE</div>
+  <div class="sidebar-footer">v2.1 Firebase &mdash; NADIR ENTERPRISE</div>
 </aside>
 
 <main id="main">
@@ -285,12 +294,32 @@ body.light-mode .toast-info{background:rgba(0,150,180,.9);color:#fff;}
     <div id="entryFormArea"></div>
   </section>
 
-  <!-- DATABASE -->
+  <!-- DATABASE — with date filter -->
   <section class="tab-content" id="tab-database">
     <h2 style="font-family:'Orbitron',sans-serif;color:var(--accent);margin-bottom:6px;">
       <i class="fa-solid fa-database"></i> Database
     </h2>
-    <p style="color:var(--text-muted);margin-bottom:16px;">All trip entries displayed with category-specific columns. Invoiced rows are highlighted.</p>
+    <p style="color:var(--text-muted);margin-bottom:16px;">All trip entries displayed with category-specific columns. Data syncs across all devices via Firebase.</p>
+
+    <!-- Prominent Date Filter -->
+    <div class="glass date-filter-box">
+      <h4><i class="fa-solid fa-calendar-days"></i> Filter by Date</h4>
+      <div class="form-grid" style="grid-template-columns:1fr 1fr auto;align-items:end;">
+        <div class="form-group">
+          <label>From Date</label>
+          <input type="date" id="dbFilterDateFrom">
+        </div>
+        <div class="form-group">
+          <label>To Date</label>
+          <input type="date" id="dbFilterDateTo">
+        </div>
+        <div style="display:flex;gap:8px;padding-bottom:2px;">
+          <button class="btn btn-primary btn-sm" onclick="renderDatabase()"><i class="fa-solid fa-search"></i> Search</button>
+          <button class="btn btn-outline btn-sm" onclick="clearDateFilter()"><i class="fa-solid fa-xmark"></i> Clear</button>
+        </div>
+      </div>
+    </div>
+
     <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px;align-items:center;">
       <select id="dbFilterCat" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:8px 14px;color:var(--text-primary);font-family:var(--font-family);outline:none;min-width:180px;">
         <option value="all">All Categories</option>
@@ -373,6 +402,10 @@ body.light-mode .toast-info{background:rgba(0,150,180,.9);color:#fff;}
       <i class="fa-solid fa-gear"></i> Settings
     </h2>
     <div class="glass" style="padding:24px;margin-bottom:24px;">
+      <h4 style="color:var(--accent);margin-bottom:16px;"><i class="fa-solid fa-fire"></i> Firebase Status</h4>
+      <div id="firebaseStatus" style="color:var(--text-secondary);font-size:14px;"></div>
+    </div>
+    <div class="glass" style="padding:24px;margin-bottom:24px;">
       <h4 style="color:var(--accent);margin-bottom:16px;"><i class="fa-solid fa-palette"></i> Theme</h4>
       <div class="theme-grid" id="themeGrid"></div>
     </div>
@@ -431,9 +464,61 @@ body.light-mode .toast-info{background:rgba(0,150,180,.9);color:#fff;}
 </datalist>
 
 <script>
-/* ================================================================
-   NADIR ENTERPRISE - Transport Management System
-   ================================================================ */
+/* =================================================================
+   NADIR ENTERPRISE - Transport Management System (Firebase Edition)
+   =================================================================
+
+   FIREBASE SETUP INSTRUCTIONS:
+   1. Go to https://console.firebase.google.com/
+   2. Create a new project (e.g. "nadir-enterprise")
+   3. Click "Add app" → Web app → Register
+   4. Copy the firebaseConfig object and paste it below
+   5. Go to Firestore Database → Create database → Start in test mode
+   6. That's it! Data will now sync across all devices.
+   ================================================================= */
+
+// ====== REPLACE THESE VALUES WITH YOUR FIREBASE CONFIG ======
+var firebaseConfig = {
+  apiKey: "YOUR_API_KEY_HERE",
+  authDomain: "YOUR_PROJECT.firebaseapp.com",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_PROJECT.appspot.com",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId: "YOUR_APP_ID"
+};
+// ============================================================
+
+// ==================== FIREBASE INIT ====================
+var firestore = null;
+var firebaseReady = false;
+
+// Check if config has been filled in
+var FIREBASE_CONFIGURED = firebaseConfig.projectId && firebaseConfig.projectId !== "YOUR_PROJECT_ID";
+
+if (FIREBASE_CONFIGURED) {
+  try {
+    firebase.initializeApp(firebaseConfig);
+    firestore = firebase.firestore();
+
+    // Enable offline persistence — data available even without internet
+    firestore.enablePersistence({ synchronizeTabs: true }).catch(function(err) {
+      if (err.code === 'failed-precondition') {
+        console.warn('Firestore persistence: Multiple tabs open. Some features limited.');
+      } else if (err.code === 'unimplemented') {
+        console.warn('Firestore persistence: Browser not supported.');
+      }
+    });
+
+    firebaseReady = true;
+  } catch(err) {
+    console.error('Firebase init error:', err);
+  }
+}
+
+// ==================== CACHED DATA (for real-time sync) ====================
+var cachedEntries = [];
+var cachedPayments = [];
+var cachedInvoices = [];
 
 // ==================== THEMES ====================
 var THEMES = [
@@ -479,7 +564,6 @@ var CAT_LABELS = {
   karachi_port: 'Karachi Port'
 };
 
-// Per-category field definitions — each field shown as a column in the DB table
 var CAT_FIELDS = {
   karachi_noras: [
     { key:'serialNo', label:'Sr#', type:'number' },
@@ -549,7 +633,6 @@ var CAT_FIELDS = {
   ]
 };
 
-// Fields shown when "All Categories" is selected in DB
 var ALL_CAT_SUMMARY_FIELDS = [
   { key:'serialNo', label:'Sr#' },
   { key:'date', label:'Date' },
@@ -608,106 +691,161 @@ function hexToRgba(hex, alpha) {
   return 'rgba(' + r + ',' + g + ',' + b + ',' + alpha + ')';
 }
 
-// Get the display value for a cell based on field type
 function getCellDisplay(entry, field) {
   var val = entry[field.key];
   if (val === undefined || val === null || val === '') return '-';
   if (field.type === 'date') return formatDate(val);
-  // Sr# column: show plain sequential number (no "PKR")
   if (field.key === 'serialNo') return Number(val);
-  // Diesel Rate/L column: show "<amount> Ltrs" (no "PKR")
   if (field.key === 'dieselRate') return Number(val) + ' Ltrs';
   if (field.type === 'number' || field.type === 'balance') return formatPKR(val);
   return val;
 }
 
-// ==================== INDEXED DB ====================
-var DB_NAME = 'NadirEnterpriseDB';
-var DB_VERSION = 2;
-var db = null;
+// ==================== FIRESTORE DATABASE FUNCTIONS ====================
+// These replace the old IndexedDB functions. All data now lives in Firebase.
 
-function openDB() {
-  return new Promise(function(resolve, reject) {
-    var req = indexedDB.open(DB_NAME, DB_VERSION);
-    req.onerror = function() { reject(req.error); };
-    req.onsuccess = function() { db = req.result; resolve(db); };
-    req.onupgradeneeded = function(e) {
-      var d = e.target.result;
-      if (!d.objectStoreNames.contains('entries')) {
-        var s = d.createObjectStore('entries', { keyPath: 'id', autoIncrement: true });
-        s.createIndex('category', 'category', { unique: false });
-        s.createIndex('ownerName', 'ownerName', { unique: false });
-        s.createIndex('invoiceNo', 'invoiceNo', { unique: false });
-      }
-      if (!d.objectStoreNames.contains('payments')) {
-        var s2 = d.createObjectStore('payments', { keyPath: 'id', autoIncrement: true });
-        s2.createIndex('ownerName', 'ownerName', { unique: false });
-      }
-      if (!d.objectStoreNames.contains('invoices')) {
-        var s3 = d.createObjectStore('invoices', { keyPath: 'id', autoIncrement: true });
-        s3.createIndex('invoiceNo', 'invoiceNo', { unique: false });
-        s3.createIndex('ownerName', 'ownerName', { unique: false });
-      }
-      if (!d.objectStoreNames.contains('settings')) {
-        d.createObjectStore('settings', { keyPath: 'key' });
-      }
-    };
-  });
+async function dbAdd(collection, data) {
+  if (!firebaseReady) { showToast('Firebase not configured!', 'error'); throw new Error('No Firebase'); }
+  var dataCopy = Object.assign({}, data);
+  delete dataCopy.id; // Firestore generates its own ID
+  var docRef = await firestore.collection(collection).add(dataCopy);
+  return docRef.id;
 }
 
-function dbAdd(store, data) {
-  return new Promise(function(resolve, reject) {
-    var tx = db.transaction(store, 'readwrite');
-    var s = tx.objectStore(store);
-    var req = s.add(data);
-    req.onsuccess = function() { resolve(req.result); };
-    req.onerror = function() { console.error('dbAdd error:', req.error); reject(req.error); };
+async function dbPut(collection, data) {
+  if (!firebaseReady) { showToast('Firebase not configured!', 'error'); throw new Error('No Firebase'); }
+  var dataCopy = Object.assign({}, data);
+  var docId;
+
+  if (collection === 'settings') {
+    docId = data.key;
+    delete dataCopy.key;
+  } else {
+    docId = data.id;
+  }
+
+  delete dataCopy.id;
+
+  if (!docId) throw new Error('No document ID for dbPut');
+  await firestore.collection(collection).doc(String(docId)).set(dataCopy);
+  return docId;
+}
+
+async function dbGet(collection, id) {
+  if (!firebaseReady) return null;
+
+  // For main collections, check cache first (instant)
+  if (collection === 'entries') {
+    return cachedEntries.find(function(e) { return e.id === id; }) || null;
+  }
+  if (collection === 'payments') {
+    return cachedPayments.find(function(p) { return p.id === id; }) || null;
+  }
+  if (collection === 'invoices') {
+    return cachedInvoices.find(function(inv) { return inv.id === id; }) || null;
+  }
+
+  // For settings, fetch from Firestore
+  var doc = await firestore.collection(collection).doc(String(id)).get();
+  if (doc.exists) {
+    var data = doc.data();
+    if (collection === 'settings') data.key = doc.id;
+    return Object.assign({ id: doc.id }, data);
+  }
+  return null;
+}
+
+function dbGetAll(collection) {
+  // Return cached data instantly — kept fresh by real-time listeners
+  if (collection === 'entries') return Promise.resolve(cachedEntries.slice());
+  if (collection === 'payments') return Promise.resolve(cachedPayments.slice());
+  if (collection === 'invoices') return Promise.resolve(cachedInvoices.slice());
+  // Settings
+  if (!firebaseReady) return Promise.resolve([]);
+  return firestore.collection(collection).get().then(function(snapshot) {
+    return snapshot.docs.map(function(doc) {
+      var data = doc.data();
+      data.key = doc.id;
+      return Object.assign({ id: doc.id }, data);
+    });
   });
 }
-function dbPut(store, data) {
-  return new Promise(function(resolve, reject) {
-    var tx = db.transaction(store, 'readwrite');
-    var s = tx.objectStore(store);
-    var req = s.put(data);
-    req.onsuccess = function() { resolve(req.result); };
-    req.onerror = function() { console.error('dbPut error:', req.error); reject(req.error); };
+
+async function dbDelete(collection, id) {
+  if (!firebaseReady) throw new Error('No Firebase');
+  await firestore.collection(collection).doc(String(id)).delete();
+}
+
+async function dbClear(collection) {
+  if (!firebaseReady) throw new Error('No Firebase');
+  var snapshot = await firestore.collection(collection).get();
+  if (snapshot.empty) return;
+  var batch = firestore.batch();
+  snapshot.forEach(function(doc) { batch.delete(doc.ref); });
+  await batch.commit();
+}
+
+// ==================== REAL-TIME LISTENERS ====================
+// These keep cachedEntries, cachedPayments, cachedInvoices up to date.
+// When ANY device changes data, ALL devices update instantly.
+
+function setupRealtimeListeners() {
+  if (!firebaseReady) return;
+
+  // --- Entries ---
+  firestore.collection('entries').onSnapshot(function(snapshot) {
+    cachedEntries = [];
+    snapshot.forEach(function(doc) {
+      cachedEntries.push(Object.assign({ id: doc.id }, doc.data()));
+    });
+    updateSyncBadge(true);
+    // Re-render current tab with fresh data
+    if (currentTab === 'dashboard') renderDashboard();
+    else if (currentTab === 'database') renderDatabase();
+    else if (currentTab === 'ownersheet') renderOwnerLedger();
+  }, function(error) {
+    console.error('Entries listener error:', error);
+    updateSyncBadge(false);
+  });
+
+  // --- Payments ---
+  firestore.collection('payments').onSnapshot(function(snapshot) {
+    cachedPayments = [];
+    snapshot.forEach(function(doc) {
+      cachedPayments.push(Object.assign({ id: doc.id }, doc.data()));
+    });
+    updateSyncBadge(true);
+    if (currentTab === 'payments') renderPayments();
+    else if (currentTab === 'ownersheet') renderOwnerLedger();
+  }, function(error) {
+    console.error('Payments listener error:', error);
+    updateSyncBadge(false);
+  });
+
+  // --- Invoices ---
+  firestore.collection('invoices').onSnapshot(function(snapshot) {
+    cachedInvoices = [];
+    snapshot.forEach(function(doc) {
+      cachedInvoices.push(Object.assign({ id: doc.id }, doc.data()));
+    });
+    updateSyncBadge(true);
+    if (currentTab === 'invoice') renderInvoiceList();
+  }, function(error) {
+    console.error('Invoices listener error:', error);
+    updateSyncBadge(false);
   });
 }
-function dbGetAll(store) {
-  return new Promise(function(resolve, reject) {
-    var tx = db.transaction(store, 'readonly');
-    var s = tx.objectStore(store);
-    var req = s.getAll();
-    req.onsuccess = function() { resolve(req.result); };
-    req.onerror = function() { reject(req.error); };
-  });
-}
-function dbGet(store, id) {
-  return new Promise(function(resolve, reject) {
-    var tx = db.transaction(store, 'readonly');
-    var s = tx.objectStore(store);
-    var req = s.get(id);
-    req.onsuccess = function() { resolve(req.result); };
-    req.onerror = function() { reject(req.error); };
-  });
-}
-function dbDelete(store, id) {
-  return new Promise(function(resolve, reject) {
-    var tx = db.transaction(store, 'readwrite');
-    var s = tx.objectStore(store);
-    var req = s.delete(id);
-    req.onsuccess = function() { resolve(); };
-    req.onerror = function() { reject(req.error); };
-  });
-}
-function dbClear(store) {
-  return new Promise(function(resolve, reject) {
-    var tx = db.transaction(store, 'readwrite');
-    var s = tx.objectStore(store);
-    var req = s.clear();
-    req.onsuccess = function() { resolve(); };
-    req.onerror = function() { reject(req.error); };
-  });
+
+function updateSyncBadge(online) {
+  var badge = document.getElementById('syncBadge');
+  var text = document.getElementById('syncText');
+  if (online) {
+    badge.className = 'sync-badge online';
+    text.textContent = 'Cloud Synced';
+  } else {
+    badge.className = 'sync-badge offline';
+    text.textContent = 'Offline / Local';
+  }
 }
 
 // ==================== APP STATE ====================
@@ -747,8 +885,7 @@ document.getElementById('confirmNo').onclick = function() {
 // ==================== NAVIGATION ====================
 document.querySelectorAll('#sidebar .nav-item').forEach(function(item) {
   item.addEventListener('click', function() {
-    var tab = item.dataset.tab;
-    switchTab(tab);
+    switchTab(item.dataset.tab);
     document.getElementById('sidebar').classList.remove('open');
   });
 });
@@ -783,40 +920,44 @@ updateClock();
 
 // ==================== DASHBOARD ====================
 async function renderDashboard() {
-  try {
-    var entries = await dbGetAll('entries');
-    var payments = await dbGetAll('payments');
-    var totalFreight = entries.reduce(function(s, e) { return s + num(e.freight); }, 0);
-    var totalBalance = entries.reduce(function(s, e) { return s + num(e.balance); }, 0);
-    var totalPayments = payments.reduce(function(s, p) { return s + num(p.amount); }, 0);
+  var entries = cachedEntries;
+  var payments = cachedPayments;
+  var totalFreight = entries.reduce(function(s, e) { return s + num(e.freight); }, 0);
+  var totalBalance = entries.reduce(function(s, e) { return s + num(e.balance); }, 0);
+  var totalPayments = payments.reduce(function(s, p) { return s + num(p.amount); }, 0);
 
-    var cards = document.getElementById('dashCards');
-    cards.innerHTML =
-      '<div class="glass glass-hover dash-card"><div class="card-icon"><i class="fa-solid fa-list-ol"></i></div><div class="card-value">' + entries.length + '</div><div class="card-label">Total Entries</div></div>' +
-      '<div class="glass glass-hover dash-card"><div class="card-icon"><i class="fa-solid fa-truck"></i></div><div class="card-value">' + formatPKR(totalFreight) + '</div><div class="card-label">Total Freight</div></div>' +
-      '<div class="glass glass-hover dash-card"><div class="card-icon"><i class="fa-solid fa-scale-balanced"></i></div><div class="card-value">' + formatPKR(totalBalance) + '</div><div class="card-label">Total Balance</div></div>' +
-      '<div class="glass glass-hover dash-card"><div class="card-icon"><i class="fa-solid fa-money-bill-transfer"></i></div><div class="card-value">' + formatPKR(totalPayments) + '</div><div class="card-label">Total Payments</div></div>' +
-      '<div class="glass glass-hover dash-card"><div class="card-icon"><i class="fa-solid fa-users"></i></div><div class="card-value">' + getUniqueOwners(entries).length + '</div><div class="card-label">Owners</div></div>' +
-      '<div class="glass glass-hover dash-card"><div class="card-icon"><i class="fa-solid fa-file-invoice"></i></div><div class="card-value">' + entries.filter(function(e) { return e.invoiceNo; }).length + '</div><div class="card-label">Invoiced Entries</div></div>';
+  var cards = document.getElementById('dashCards');
+  cards.innerHTML =
+    '<div class="glass glass-hover dash-card"><div class="card-icon"><i class="fa-solid fa-list-ol"></i></div><div class="card-value">' + entries.length + '</div><div class="card-label">Total Entries</div></div>' +
+    '<div class="glass glass-hover dash-card"><div class="card-icon"><i class="fa-solid fa-truck"></i></div><div class="card-value">' + formatPKR(totalFreight) + '</div><div class="card-label">Total Freight</div></div>' +
+    '<div class="glass glass-hover dash-card"><div class="card-icon"><i class="fa-solid fa-scale-balanced"></i></div><div class="card-value">' + formatPKR(totalBalance) + '</div><div class="card-label">Total Balance</div></div>' +
+    '<div class="glass glass-hover dash-card"><div class="card-icon"><i class="fa-solid fa-money-bill-transfer"></i></div><div class="card-value">' + formatPKR(totalPayments) + '</div><div class="card-label">Total Payments</div></div>' +
+    '<div class="glass glass-hover dash-card"><div class="card-icon"><i class="fa-solid fa-users"></i></div><div class="card-value">' + getUniqueOwners(entries).length + '</div><div class="card-label">Owners</div></div>' +
+    '<div class="glass glass-hover dash-card"><div class="card-icon"><i class="fa-solid fa-file-invoice"></i></div><div class="card-value">' + entries.filter(function(e) { return e.invoiceNo; }).length + '</div><div class="card-label">Invoiced Entries</div></div>';
 
-    var leb = document.getElementById('lastEntryContent');
-    if (entries.length === 0) {
-      leb.innerHTML = '<p style="color:var(--text-muted)">No entries yet.</p>';
-    } else {
-      var last = entries.reduce(function(a, b) { return a.id > b.id ? a : b; });
-      var fields = CAT_FIELDS[last.category] || [];
-      var html = '<div class="le-row"><span>Category</span><span>' + (CAT_LABELS[last.category] || last.category) + '</span></div>';
-      fields.forEach(function(f) {
-        if (f.key === 'balance') {
-          html += '<div class="le-row"><span>' + f.label + '</span><span style="color:var(--accent);font-weight:700">' + formatPKR(last[f.key]) + '</span></div>';
-        } else {
-          html += '<div class="le-row"><span>' + f.label + '</span><span>' + (last[f.key] || '-') + '</span></div>';
-        }
-      });
-      if (last.invoiceNo) html += '<div class="le-row"><span>Invoice #</span><span class="badge badge-green">' + last.invoiceNo + '</span></div>';
-      leb.innerHTML = html;
-    }
-  } catch(err) { console.error('Dashboard error:', err); }
+  var leb = document.getElementById('lastEntryContent');
+  if (entries.length === 0) {
+    leb.innerHTML = '<p style="color:var(--text-muted)">No entries yet.</p>';
+  } else {
+    // Sort by createdAt to find the truly last entry
+    var sorted = entries.slice().sort(function(a, b) {
+      var ta = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      var tb = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      return tb - ta;
+    });
+    var last = sorted[0];
+    var fields = CAT_FIELDS[last.category] || [];
+    var html = '<div class="le-row"><span>Category</span><span>' + (CAT_LABELS[last.category] || last.category) + '</span></div>';
+    fields.forEach(function(f) {
+      if (f.key === 'balance') {
+        html += '<div class="le-row"><span>' + f.label + '</span><span style="color:var(--accent);font-weight:700">' + formatPKR(last[f.key]) + '</span></div>';
+      } else {
+        html += '<div class="le-row"><span>' + f.label + '</span><span>' + (last[f.key] || '-') + '</span></div>';
+      }
+    });
+    if (last.invoiceNo) html += '<div class="le-row"><span>Invoice #</span><span class="badge badge-green">' + last.invoiceNo + '</span></div>';
+    leb.innerHTML = html;
+  }
 }
 
 // ==================== DATA ENTRY ====================
@@ -825,11 +966,8 @@ document.querySelectorAll('.cat-card').forEach(function(card) {
 });
 
 async function renderEntryForm(category) {
-  try {
-    var entries = await dbGetAll('entries');
-    var catEntries = entries.filter(function(e) { return e.category === category; });
-    var nextSerial = catEntries.length > 0 ? Math.max.apply(null, catEntries.map(function(e) { return num(e.serialNo); })) + 1 : 1;
-  } catch(err) { var nextSerial = 1; }
+  var catEntries = cachedEntries.filter(function(e) { return e.category === category; });
+  var nextSerial = catEntries.length > 0 ? Math.max.apply(null, catEntries.map(function(e) { return num(e.serialNo); })) + 1 : 1;
 
   var fields = CAT_FIELDS[category];
   var html = '<div class="glass" style="padding:28px;margin-top:24px;" id="entryFormGlass">';
@@ -846,7 +984,7 @@ async function renderEntryForm(category) {
       var inputType = f.type === 'date' ? 'date' : f.type === 'number' ? 'number' : 'text';
       var minAttr = f.type === 'number' ? ' min="0"' : '';
       var listAttr = (f.key === 'destination') ? ' list="destinationList"' : '';
-      var changeAttr = (f.key === 'date') ? ' onchange="lastSelectedDate=this.value;dbPut(\'settings\',{key:\'lastDate\',value:this.value}).catch(function(){})"' : '';
+      var changeAttr = (f.key === 'date') ? ' onchange="lastSelectedDate=this.value;localStorage.setItem(\'lastDate\',this.value)"' : '';
       html += '<div class="form-group"><label>' + f.label + '</label><input type="' + inputType + '" id="entry_' + f.key + '" value="' + val + '"' + minAttr + listAttr + changeAttr + ' oninput="updateEntryBalance(\'' + category + '\')"></div>';
     }
   });
@@ -860,8 +998,6 @@ async function renderEntryForm(category) {
   document.getElementById('entryFormArea').innerHTML = html;
   document.getElementById('entryFormArea').scrollIntoView({ behavior: 'smooth' });
   updateEntryBalance(category);
-
-  // Arrow key navigation
   setupArrowNav('entryFormGlass');
 }
 
@@ -882,7 +1018,6 @@ function updateEntryBalance(category) {
 
 function cancelEntry() { document.getElementById('entryFormArea').innerHTML = ''; }
 
-// ==================== ARROW KEY NAVIGATION ====================
 function setupArrowNav(containerId) {
   var container = document.getElementById(containerId);
   if (!container) return;
@@ -919,29 +1054,32 @@ async function saveEntry(category) {
   }
 
   try {
-    var newId = await dbAdd('entries', data);
-    showToast('Entry saved successfully! ID: ' + newId);
+    await dbAdd('entries', data);
+    showToast('Entry saved successfully!');
     renderEntryForm(category);
-    if (currentTab === 'dashboard') renderDashboard();
-    else if (currentTab === 'database') renderDatabase();
   } catch(err) {
     console.error('Save error:', err);
     showToast('Error saving entry: ' + err.message, 'error');
   }
 }
 
-// ==================== DATABASE TAB (Category-specific columns) ====================
+// ==================== DATABASE TAB ====================
+function clearDateFilter() {
+  document.getElementById('dbFilterDateFrom').value = '';
+  document.getElementById('dbFilterDateTo').value = '';
+  renderDatabase();
+}
+
 async function renderDatabase() {
-  try {
-    var entries = await dbGetAll('entries');
-  } catch(err) {
-    document.getElementById('dbTbody').innerHTML = '<tr><td colspan="20" style="text-align:center;color:var(--danger);">Error loading entries.</td></tr>';
-    return;
-  }
+  var entries = cachedEntries.slice();
 
   var filterCat = document.getElementById('dbFilterCat').value;
   var filterOwner = document.getElementById('dbFilterOwner') ? document.getElementById('dbFilterOwner').value : '';
   var search = (document.getElementById('dbSearch').value || '').toLowerCase();
+
+  // Date filter — THIS IS THE KEY FEATURE
+  var filterDateFrom = document.getElementById('dbFilterDateFrom').value;
+  var filterDateTo = document.getElementById('dbFilterDateTo').value;
 
   // Populate owner filter dropdown
   var owners = getUniqueOwners(entries);
@@ -954,10 +1092,12 @@ async function renderDatabase() {
     });
   }
 
-  // Filter entries
+  // Apply filters
   var filtered = entries;
   if (filterCat !== 'all') filtered = filtered.filter(function(e) { return e.category === filterCat; });
   if (filterOwner) filtered = filtered.filter(function(e) { return e.ownerName === filterOwner; });
+  if (filterDateFrom) filtered = filtered.filter(function(e) { return e.date >= filterDateFrom; });
+  if (filterDateTo) filtered = filtered.filter(function(e) { return e.date <= filterDateTo; });
   if (search) filtered = filtered.filter(function(e) {
     return (e.ownerName || '').toLowerCase().indexOf(search) !== -1 ||
       (e.vehicleNo || '').toLowerCase().indexOf(search) !== -1 ||
@@ -971,42 +1111,36 @@ async function renderDatabase() {
       (e.remarks || '').toLowerCase().indexOf(search) !== -1;
   });
 
-  // Sort chronologically by date, fallback to id
+  // Sort chronologically
   filtered.sort(function(a, b) {
     var dA = new Date(a.date || '1970-01-01'), dB = new Date(b.date || '1970-01-01');
     if (dA.getTime() !== dB.getTime()) return dA.getTime() - dB.getTime();
-    return a.id - b.id;
+    return (a.createdAt || '').localeCompare(b.createdAt || '');
   });
 
   var thead = document.getElementById('dbThead');
   var tbody = document.getElementById('dbTbody');
 
-  // Determine which columns to display based on selected category
   var displayFields;
   var showCategoryCol = (filterCat === 'all');
-
   if (filterCat === 'all') {
     displayFields = ALL_CAT_SUMMARY_FIELDS;
   } else {
     displayFields = CAT_FIELDS[filterCat];
   }
 
-  // Build thead
   var headHtml = '<tr><th>#</th>';
   if (showCategoryCol) headHtml += '<th>Category</th>';
-  displayFields.forEach(function(f) {
-    headHtml += '<th>' + f.label + '</th>';
-  });
+  displayFields.forEach(function(f) { headHtml += '<th>' + f.label + '</th>'; });
   headHtml += '<th>Invoice</th><th>Actions</th></tr>';
   thead.innerHTML = headHtml;
 
   if (filtered.length === 0) {
     var colSpan = displayFields.length + (showCategoryCol ? 4 : 3);
-    tbody.innerHTML = '<tr><td colspan="' + colSpan + '" style="text-align:center;color:var(--text-muted);padding:30px;">No entries found.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="' + colSpan + '" style="text-align:center;color:var(--text-muted);padding:30px;">No entries found for the selected filters.</td></tr>';
     return;
   }
 
-  // Build tbody — auto-sequential serial numbers based on chronological order
   var html = '';
   filtered.forEach(function(e, i) {
     var invoiced = e.invoiceNo ? 'invoiced-row' : '';
@@ -1021,11 +1155,7 @@ async function renderDatabase() {
     }
 
     displayFields.forEach(function(f) {
-      // For serialNo column, show auto-sequential number
-      if (f.key === 'serialNo') {
-        html += '<td>' + (i + 1) + '</td>';
-        return;
-      }
+      if (f.key === 'serialNo') { html += '<td>' + (i + 1) + '</td>'; return; }
       var cellVal = getCellDisplay(e, f);
       var styleAttr = '';
       if (f.type === 'balance') styleAttr = ' style="font-weight:700;color:var(--accent);"';
@@ -1035,8 +1165,8 @@ async function renderDatabase() {
 
     html += '<td>' + invBadge + '</td>';
     html += '<td>' +
-      '<button class="btn btn-outline btn-sm" onclick="editEntry(' + e.id + ')" title="Edit"><i class="fa-solid fa-pen"></i></button> ' +
-      '<button class="btn btn-danger btn-sm" onclick="deleteEntry(' + e.id + ')" title="Delete"><i class="fa-solid fa-trash"></i></button>' +
+      '<button class="btn btn-outline btn-sm" onclick="editEntry(\'' + e.id + '\')" title="Edit"><i class="fa-solid fa-pen"></i></button> ' +
+      '<button class="btn btn-danger btn-sm" onclick="deleteEntry(\'' + e.id + '\')" title="Delete"><i class="fa-solid fa-trash"></i></button>' +
       '</td></tr>';
   });
 
@@ -1056,7 +1186,6 @@ document.getElementById('dbExportBtn').addEventListener('click', function() {
   var headerRow = [];
   thCells.forEach(function(th) { headerRow.push('"' + th.textContent.replace(/"/g, '""') + '"'); });
   rows.push(headerRow.join(','));
-
   var trs = tbody.querySelectorAll('tr');
   trs.forEach(function(tr) {
     var tds = tr.querySelectorAll('td');
@@ -1066,18 +1195,15 @@ document.getElementById('dbExportBtn').addEventListener('click', function() {
       rows.push(row.join(','));
     }
   });
-
   var blob = new Blob([rows.join('\n')], { type: 'text/csv' });
   var url = URL.createObjectURL(blob);
   var a = document.createElement('a');
-  a.href = url;
-  a.download = 'NadirEnterprise_DB_' + todayStr() + '.csv';
-  a.click();
-  URL.revokeObjectURL(url);
+  a.href = url; a.download = 'NadirEnterprise_DB_' + todayStr() + '.csv';
+  a.click(); URL.revokeObjectURL(url);
   showToast('CSV exported!');
 });
 
-// Edit entry — opens modal with category-specific form
+// Edit entry
 async function editEntry(id) {
   var entry = await dbGet('entries', id);
   if (!entry) { showToast('Entry not found!', 'error'); return; }
@@ -1092,12 +1218,13 @@ async function editEntry(id) {
     } else {
       var inputType = f.type === 'date' ? 'date' : f.type === 'number' ? 'number' : 'text';
       var minAttr = f.type === 'number' ? ' min="0"' : '';
-      html += '<div class="form-group"><label>' + f.label + '</label><input type="' + inputType + '" id="edit_' + f.key + '" value="' + (entry[f.key] || '') + '"' + minAttr + ' oninput="updateEditBalance(\'' + entry.category + '\')"></div>';
+      var val = (entry[f.key] !== undefined && entry[f.key] !== null) ? entry[f.key] : '';
+      html += '<div class="form-group"><label>' + f.label + '</label><input type="' + inputType + '" id="edit_' + f.key + '" value="' + val + '"' + minAttr + ' oninput="updateEditBalance(\'' + entry.category + '\')"></div>';
     }
   });
   html += '</div>';
   html += '<div style="display:flex;gap:12px;margin-top:20px;">';
-  html += '<button class="btn btn-primary" onclick="saveEditEntry(' + id + ',\'' + entry.category + '\')"><i class="fa-solid fa-save"></i> Update</button>';
+  html += '<button class="btn btn-primary" onclick="saveEditEntry(\'' + id + '\',\'' + entry.category + '\')"><i class="fa-solid fa-save"></i> Update</button>';
   html += '<button class="btn btn-outline" onclick="closeEditModal()"><i class="fa-solid fa-xmark"></i> Cancel</button>';
   html += '</div>';
 
@@ -1139,7 +1266,6 @@ async function saveEditEntry(id, category) {
     await dbPut('entries', entry);
     closeEditModal();
     showToast('Entry updated!');
-    renderDatabase();
   } catch(err) {
     showToast('Update error: ' + err.message, 'error');
   }
@@ -1151,15 +1277,13 @@ async function deleteEntry(id) {
   showConfirm('Are you sure you want to delete this entry?', async function() {
     await dbDelete('entries', id);
     showToast('Entry deleted!', 'info');
-    renderDatabase();
   });
 }
 
 // ==================== OWNER SHEET ====================
 async function renderOwnerSheet() {
-  var entries = await dbGetAll('entries');
+  var entries = cachedEntries;
   var owners = getUniqueOwners(entries);
-
   var sel = document.getElementById('ownerSelect');
   var currentVal = sel.value;
   sel.innerHTML = '<option value="" style="color:var(--accent)">-- Select Owner --</option>';
@@ -1180,8 +1304,8 @@ async function renderOwnerLedger() {
     return;
   }
 
-  var entries = await dbGetAll('entries');
-  var payments = await dbGetAll('payments');
+  var entries = cachedEntries;
+  var payments = cachedPayments;
 
   var ownerEntries = entries.filter(function(e) { return e.ownerName === ownerName; }).sort(function(a, b) { return new Date(a.date) - new Date(b.date); });
   var ownerPayments = payments.filter(function(p) { return p.ownerName === ownerName; }).sort(function(a, b) { return new Date(a.date) - new Date(b.date); });
@@ -1238,8 +1362,8 @@ async function renderOwnerLedger() {
 
 // ==================== PAYMENTS ====================
 async function renderPayments() {
-  var entries = await dbGetAll('entries');
-  var payments = await dbGetAll('payments');
+  var entries = cachedEntries;
+  var payments = cachedPayments;
   var owners = getUniqueOwners(entries);
 
   var sel = document.getElementById('payOwner');
@@ -1253,16 +1377,20 @@ async function renderPayments() {
   document.getElementById('payDate').value = todayStr();
 
   var tbody = document.getElementById('payTbody');
-  payments.sort(function(a, b) { return b.id - a.id; });
+  var sorted = payments.slice().sort(function(a, b) {
+    var ta = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+    var tb = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+    return tb - ta;
+  });
 
-  if (payments.length === 0) {
+  if (sorted.length === 0) {
     tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:30px;">No payments recorded.</td></tr>';
     return;
   }
 
   var html = '';
-  payments.forEach(function(p, i) {
-    html += '<tr><td>' + (i + 1) + '</td><td>' + formatDate(p.date) + '</td><td>' + (p.ownerName || '-') + '</td><td>' + (p.description || '-') + '</td><td style="font-weight:700;color:var(--warning);">' + formatPKR(p.amount) + '</td><td><button class="btn btn-outline btn-sm" onclick="editPayment(' + p.id + ')" title="Edit"><i class="fa-solid fa-pen"></i></button> <button class="btn btn-danger btn-sm" onclick="deletePayment(' + p.id + ')" title="Delete"><i class="fa-solid fa-trash"></i></button></td></tr>';
+  sorted.forEach(function(p, i) {
+    html += '<tr><td>' + (i + 1) + '</td><td>' + formatDate(p.date) + '</td><td>' + (p.ownerName || '-') + '</td><td>' + (p.description || '-') + '</td><td style="font-weight:700;color:var(--warning);">' + formatPKR(p.amount) + '</td><td><button class="btn btn-outline btn-sm" onclick="editPayment(\'' + p.id + '\')" title="Edit"><i class="fa-solid fa-pen"></i></button> <button class="btn btn-danger btn-sm" onclick="deletePayment(\'' + p.id + '\')" title="Delete"><i class="fa-solid fa-trash"></i></button></td></tr>';
   });
   tbody.innerHTML = html;
 }
@@ -1281,7 +1409,6 @@ async function addPayment() {
     showToast('Payment recorded!');
     document.getElementById('payDesc').value = '';
     document.getElementById('payAmount').value = '';
-    renderPayments();
   } catch(err) { showToast('Payment error: ' + err.message, 'error'); }
 }
 
@@ -1289,31 +1416,29 @@ async function deletePayment(id) {
   showConfirm('Delete this payment?', async function() {
     await dbDelete('payments', id);
     showToast('Payment deleted!', 'info');
-    renderPayments();
   });
 }
 
 function editPayment(id) {
-  dbGet('payments', id).then(function(p) {
-    if (!p) { showToast('Payment not found!', 'error'); return; }
-    var html = '<div class="form-grid">';
-    html += '<div class="form-group"><label>Date</label><input type="date" id="editpay_date" value="' + (p.date || '') + '"></div>';
-    html += '<div class="form-group"><label>Owner Name</label><input type="text" id="editpay_owner" value="' + (p.ownerName || '') + '"></div>';
-    html += '<div class="form-group"><label>Description / Reference</label><input type="text" id="editpay_desc" value="' + (p.description || '') + '"></div>';
-    html += '<div class="form-group"><label>Amount (PKR)</label><input type="number" id="editpay_amount" value="' + (p.amount || 0) + '" min="0"></div>';
-    html += '</div>';
-    html += '<div style="display:flex;gap:12px;margin-top:20px;">';
-    html += '<button class="btn btn-primary" onclick="saveEditPayment(' + id + ')"><i class="fa-solid fa-save"></i> Update</button>';
-    html += '<button class="btn btn-outline" onclick="closeEditModal()"><i class="fa-solid fa-xmark"></i> Cancel</button>';
-    html += '</div>';
-    document.getElementById('editFormArea').innerHTML = html;
-    document.getElementById('editModalTitle').textContent = 'Edit Payment';
-    document.getElementById('editModal').classList.add('show');
-  });
+  var p = cachedPayments.find(function(x) { return x.id === id; });
+  if (!p) { showToast('Payment not found!', 'error'); return; }
+  var html = '<div class="form-grid">';
+  html += '<div class="form-group"><label>Date</label><input type="date" id="editpay_date" value="' + (p.date || '') + '"></div>';
+  html += '<div class="form-group"><label>Owner Name</label><input type="text" id="editpay_owner" value="' + (p.ownerName || '') + '"></div>';
+  html += '<div class="form-group"><label>Description / Reference</label><input type="text" id="editpay_desc" value="' + (p.description || '') + '"></div>';
+  html += '<div class="form-group"><label>Amount (PKR)</label><input type="number" id="editpay_amount" value="' + (p.amount || 0) + '" min="0"></div>';
+  html += '</div>';
+  html += '<div style="display:flex;gap:12px;margin-top:20px;">';
+  html += '<button class="btn btn-primary" onclick="saveEditPayment(\'' + id + '\')"><i class="fa-solid fa-save"></i> Update</button>';
+  html += '<button class="btn btn-outline" onclick="closeEditModal()"><i class="fa-solid fa-xmark"></i> Cancel</button>';
+  html += '</div>';
+  document.getElementById('editFormArea').innerHTML = html;
+  document.getElementById('editModalTitle').textContent = 'Edit Payment';
+  document.getElementById('editModal').classList.add('show');
 }
 
 async function saveEditPayment(id) {
-  var p = await dbGet('payments', id);
+  var p = cachedPayments.find(function(x) { return x.id === id; });
   if (!p) { showToast('Payment not found!', 'error'); return; }
   p.date = document.getElementById('editpay_date').value;
   p.ownerName = document.getElementById('editpay_owner').value;
@@ -1325,13 +1450,12 @@ async function saveEditPayment(id) {
     await dbPut('payments', p);
     closeEditModal();
     showToast('Payment updated!');
-    renderPayments();
   } catch(err) { showToast('Update error: ' + err.message, 'error'); }
 }
 
 // ==================== INVOICE ====================
 async function renderInvoice() {
-  var entries = await dbGetAll('entries');
+  var entries = cachedEntries;
   var owners = getUniqueOwners(entries);
   var sel = document.getElementById('invOwner');
   sel.innerHTML = '<option value="" style="color:var(--accent)">-- Select Owner --</option>';
@@ -1347,7 +1471,7 @@ async function generateInvoice() {
   if (!ownerName) { showToast('Please select an owner!', 'error'); return; }
   if (!fromDate || !toDate) { showToast('Please select date range!', 'error'); return; }
 
-  var allEntries = await dbGetAll('entries');
+  var allEntries = cachedEntries;
   var filtered = allEntries.filter(function(e) {
     return e.ownerName === ownerName && e.date >= fromDate && e.date <= toDate && !e.invoiceNo;
   });
@@ -1357,8 +1481,7 @@ async function generateInvoice() {
     return;
   }
 
-  var invoices = await dbGetAll('invoices');
-  var nextInvNo = invoices.length > 0 ? Math.max.apply(null, invoices.map(function(inv) { return inv.invoiceNo; })) + 1 : 1;
+  var nextInvNo = cachedInvoices.length > 0 ? Math.max.apply(null, cachedInvoices.map(function(inv) { return inv.invoiceNo || 0; })) + 1 : 1;
 
   try {
     await dbAdd('invoices', { invoiceNo: nextInvNo, ownerName: ownerName, fromDate: fromDate, toDate: toDate, entryIds: filtered.map(function(e) { return e.id; }), createdAt: new Date().toISOString() });
@@ -1375,10 +1498,10 @@ async function generateInvoice() {
 }
 
 async function renderInvoiceList() {
-  var invoices = await dbGetAll('invoices');
-  var payments = await dbGetAll('payments');
-  var entries = await dbGetAll('entries');
-  invoices.sort(function(a, b) { return a.invoiceNo - b.invoiceNo; });
+  var invoices = cachedInvoices.slice();
+  var payments = cachedPayments;
+  var entries = cachedEntries;
+  invoices.sort(function(a, b) { return (a.invoiceNo || 0) - (b.invoiceNo || 0); });
 
   var tbody = document.getElementById('invTbody');
   if (invoices.length === 0) {
@@ -1399,9 +1522,9 @@ async function renderInvoiceList() {
 }
 
 async function viewInvoice(invoiceNo) {
-  var entries = await dbGetAll('entries');
-  var payments = await dbGetAll('payments');
-  var invoices = await dbGetAll('invoices');
+  var entries = cachedEntries;
+  var payments = cachedPayments;
+  var invoices = cachedInvoices;
   var inv = invoices.find(function(i) { return i.invoiceNo === invoiceNo; });
   if (!inv) { showToast('Invoice not found!', 'error'); return; }
 
@@ -1416,14 +1539,13 @@ async function viewInvoice(invoiceNo) {
   var totalPayments = invPayments.reduce(function(s, p) { return s + num(p.amount); }, 0);
   var netAmount = totalBalance - totalPayments;
 
-  // Auto-resize text based on number of entries
   var entryCount = invEntries.length;
-  var tfs, ths, tds, sumfs, netfs, padH, padV;
-  if (entryCount > 15) { tfs='9px'; ths='9px'; tds='5px 6px'; sumfs='10px'; netfs='13px'; padH='6px'; padV='4px'; }
-  else if (entryCount > 8) { tfs='11px'; ths='11px'; tds='5px 7px'; sumfs='12px'; netfs='15px'; padH='7px'; padV='5px'; }
-  else { tfs='13px'; ths='13px'; tds='6px 8px'; sumfs='14px'; netfs='18px'; padH='8px'; padV='8px'; }
+  var tfs, ths, tds, sumfs, netfs, padH;
+  if (entryCount > 15) { tfs='9px'; ths='9px'; tds='5px 6px'; sumfs='10px'; netfs='13px'; padH='6px'; }
+  else if (entryCount > 8) { tfs='11px'; ths='11px'; tds='5px 7px'; sumfs='12px'; netfs='15px'; padH='7px'; }
+  else { tfs='13px'; ths='13px'; tds='6px 8px'; sumfs='14px'; netfs='18px'; padH='8px'; }
 
-  var html = '<div class="invoice-preview" id="invoicePrintArea" data-tfs="' + tfs + '" data-ths="' + ths + '" data-tds="' + tds + '" data-sumfs="' + sumfs + '" data-netfs="' + netfs + '" data-padH="' + padH + '" data-padV="' + padV + '">';
+  var html = '<div class="invoice-preview" id="invoicePrintArea" data-tfs="' + tfs + '" data-ths="' + ths + '" data-tds="' + tds + '" data-sumfs="' + sumfs + '" data-netfs="' + netfs + '" data-padH="' + padH + '">';
   html += '<div style="text-align:center;border-bottom:3px solid #111;padding-bottom:16px;margin-bottom:20px;">';
   html += '<h2 style="margin:0;font-family:Orbitron,sans-serif;letter-spacing:2px;font-size:' + netfs + ';">NADIR ENTERPRISE</h2>';
   html += '<p style="margin:4px 0 0;color:#555;font-size:' + sumfs + ';">Transport Management System</p></div>';
@@ -1437,7 +1559,7 @@ async function viewInvoice(invoiceNo) {
 
   invEntries.forEach(function(e, i) {
     var route = [e.from, e.to, e.destination, e.description].filter(Boolean).join(' \u2192 ') || '-';
-    html += '<tr><td style="padding:' + tds + ';border:1px solid #e0e0e0;">' + (i + 1) + '</td><td style="padding:' + tds + ';border:1px solid #e0e0e0;">' + formatDate(e.date) + '</td><td style="padding:' + tds + ';border:1px solid #e0e0e0;">' + CAT_LABELS[e.category] + '</td><td style="padding:' + tds + ';border:1px solid #e0e0e0;">' + (e.vehicleNo || '-') + '</td><td style="padding:' + tds + ';border:1px solid #e0e0e0;">' + route + '</td><td style="padding:' + tds + ';border:1px solid #e0e0e0;text-align:right;">' + formatPKR(e.freight) + '</td><td style="padding:' + tds + ';border:1px solid #e0e0e0;text-align:right;">' + formatPKR(e.advance) + '</td><td style="padding:' + tds + ';border:1px solid #e0e0e0;text-align:right;">' + formatPKR(e.detention) + '</td><td style="padding:' + tds + ';border:1px solid #e0e0e0;text-align:right;font-weight:700;">' + formatPKR(e.balance) + '</td><td style="padding:' + tds + ';border:1px solid #e0e0e0;text-align:center;"><button class="btn btn-outline btn-sm" style="background:#fff;color:#111;border-color:#999;" onclick="editEntry(' + e.id + ')" title="Edit entry"><i class="fa-solid fa-pen"></i></button></td></tr>';
+    html += '<tr><td style="padding:' + tds + ';border:1px solid #e0e0e0;">' + (i + 1) + '</td><td style="padding:' + tds + ';border:1px solid #e0e0e0;">' + formatDate(e.date) + '</td><td style="padding:' + tds + ';border:1px solid #e0e0e0;">' + CAT_LABELS[e.category] + '</td><td style="padding:' + tds + ';border:1px solid #e0e0e0;">' + (e.vehicleNo || '-') + '</td><td style="padding:' + tds + ';border:1px solid #e0e0e0;">' + route + '</td><td style="padding:' + tds + ';border:1px solid #e0e0e0;text-align:right;">' + formatPKR(e.freight) + '</td><td style="padding:' + tds + ';border:1px solid #e0e0e0;text-align:right;">' + formatPKR(e.advance) + '</td><td style="padding:' + tds + ';border:1px solid #e0e0e0;text-align:right;">' + formatPKR(e.detention) + '</td><td style="padding:' + tds + ';border:1px solid #e0e0e0;text-align:right;font-weight:700;">' + formatPKR(e.balance) + '</td><td style="padding:' + tds + ';border:1px solid #e0e0e0;text-align:center;"><button class="btn btn-outline btn-sm" style="background:#fff;color:#111;border-color:#999;" onclick="editEntry(\'' + e.id + '\')" title="Edit entry"><i class="fa-solid fa-pen"></i></button></td></tr>';
   });
   html += '</tbody></table>';
 
@@ -1472,49 +1594,29 @@ async function viewInvoice(invoiceNo) {
 
 function printInvoice(invoiceNo) {
   var content = document.getElementById('invoicePrintArea');
-  if (!content) { viewInvoice(invoiceNo).then(function() { setTimeout(function() { printInvoice(invoiceNo); }, 500); }); return; }
+  if (!content) { viewInvoice(invoiceNo); setTimeout(function() { printInvoice(invoiceNo); }, 500); return; }
   var tfs = content.getAttribute('data-tfs') || '13px';
   var ths = content.getAttribute('data-ths') || '13px';
-  var sumfs = content.getAttribute('data-sumfs') || '14px';
-  var netfs = content.getAttribute('data-netfs') || '18px';
   var win = window.open('', '_blank');
-  win.document.write('<!DOCTYPE html><html><head><title>Invoice #' + invoiceNo + ' - NADIR ENTERPRISE</title><style>body{font-family:Segoe UI,Arial,sans-serif;margin:30px;color:#111;font-size:' + tfs + ';}table{width:100%;border-collapse:collapse;font-size:' + tfs + ';}th,td{padding:6px 8px;border:1px solid #ddd;text-align:left;}th{background:#f5f5f5;font-size:' + ths + ';}@media print{body{margin:10px;}}</style></head><body>' + content.innerHTML + '</body></html>');
+  win.document.write('<!DOCTYPE html><html><head><title>Invoice #' + invoiceNo + '</title><style>body{font-family:Segoe UI,Arial,sans-serif;margin:30px;color:#111;font-size:' + tfs + ';}table{width:100%;border-collapse:collapse;}th,td{padding:6px 8px;border:1px solid #ddd;text-align:left;}th{background:#f5f5f5;font-size:' + ths + ';}@media print{body{margin:10px;}}</style></head><body>' + content.innerHTML + '</body></html>');
   win.document.close();
   setTimeout(function() { win.print(); }, 600);
 }
 
 async function deleteInvoice(invoiceNo) {
-  showConfirm('Delete Invoice #' + invoiceNo + '? Entries will be marked as unbilled and invoice numbers will be renumbered.', async function() {
-    var entries = await dbGetAll('entries');
-    var invoices = await dbGetAll('invoices');
-
-    var affectedEntries = entries.filter(function(e) { return e.invoiceNo === invoiceNo; });
-    for (var i = 0; i < affectedEntries.length; i++) {
-      affectedEntries[i].invoiceNo = null;
-      await dbPut('entries', affectedEntries[i]);
+  showConfirm('Delete Invoice #' + invoiceNo + '? Entries will be marked as unbilled.', async function() {
+    // Find all entries with this invoiceNo and clear it
+    var affected = cachedEntries.filter(function(e) { return e.invoiceNo === invoiceNo; });
+    for (var i = 0; i < affected.length; i++) {
+      affected[i].invoiceNo = null;
+      await dbPut('entries', affected[i]);
     }
 
-    var inv = invoices.find(function(i) { return i.invoiceNo === invoiceNo; });
+    // Delete the invoice document
+    var inv = cachedInvoices.find(function(x) { return x.invoiceNo === invoiceNo; });
     if (inv) await dbDelete('invoices', inv.id);
 
-    var remainingInvoices = invoices.filter(function(i) { return i.invoiceNo !== invoiceNo; }).sort(function(a, b) { return a.invoiceNo - b.invoiceNo; });
-    var updatedEntries = await dbGetAll('entries');
-
-    for (var j = 0; j < remainingInvoices.length; j++) {
-      var newNo = j + 1;
-      var oldNo = remainingInvoices[j].invoiceNo;
-      if (oldNo !== newNo) {
-        var entriesWithOldNo = updatedEntries.filter(function(e) { return e.invoiceNo === oldNo; });
-        for (var k = 0; k < entriesWithOldNo.length; k++) {
-          entriesWithOldNo[k].invoiceNo = newNo;
-          await dbPut('entries', entriesWithOldNo[k]);
-        }
-        remainingInvoices[j].invoiceNo = newNo;
-        await dbPut('invoices', remainingInvoices[j]);
-      }
-    }
-
-    showToast('Invoice deleted and renumbered!', 'info');
+    showToast('Invoice deleted!', 'info');
     document.getElementById('invoicePreviewArea').innerHTML = '';
     renderInvoiceList();
   });
@@ -1522,6 +1624,14 @@ async function deleteInvoice(invoiceNo) {
 
 // ==================== SETTINGS ====================
 function renderSettings() {
+  // Firebase status
+  var statusEl = document.getElementById('firebaseStatus');
+  if (firebaseReady) {
+    statusEl.innerHTML = '<span style="color:#00e676;font-weight:700;"><i class="fa-solid fa-circle-check"></i> Firebase Connected</span><br><small style="color:var(--text-muted);">Project: ' + firebaseConfig.projectId + ' — Data syncs across all devices in real-time.</small>';
+  } else {
+    statusEl.innerHTML = '<span style="color:#ff5252;font-weight:700;"><i class="fa-solid fa-triangle-exclamation"></i> Firebase Not Configured</span><br><small style="color:var(--text-muted);">Replace the firebaseConfig values in the code with your Firebase project credentials. Data is NOT syncing across devices.</small>';
+  }
+
   var tGrid = document.getElementById('themeGrid');
   tGrid.innerHTML = '';
   THEMES.forEach(function(t, i) {
@@ -1547,7 +1657,8 @@ async function applyTheme(index) {
   document.documentElement.style.setProperty('--glass-bg', t.glass);
   document.documentElement.style.setProperty('--glass-border', t.border);
   document.body.style.background = t.bg;
-  try { await dbPut('settings', { key: 'theme', value: index }); } catch(e) {}
+  if (firebaseReady) { try { await dbPut('settings', { key: 'theme', value: index }); } catch(e) {} }
+  else { localStorage.setItem('theme', index); }
   renderSettings();
   showToast('Theme: ' + t.name);
 }
@@ -1556,7 +1667,8 @@ async function applyFont(index) {
   appSettings.font = index;
   document.documentElement.style.setProperty('--font-family', FONTS[index].family);
   document.body.style.fontFamily = FONTS[index].family;
-  try { await dbPut('settings', { key: 'font', value: index }); } catch(e) {}
+  if (firebaseReady) { try { await dbPut('settings', { key: 'font', value: index }); } catch(e) {} }
+  else { localStorage.setItem('font', index); }
   renderSettings();
   showToast('Font: ' + FONTS[index].name);
 }
@@ -1564,16 +1676,17 @@ async function applyFont(index) {
 document.getElementById('modeToggle').addEventListener('change', async function() {
   appSettings.darkMode = !this.checked;
   document.body.classList.toggle('light-mode', !appSettings.darkMode);
-  try { await dbPut('settings', { key: 'darkMode', value: appSettings.darkMode }); } catch(e) {}
+  if (firebaseReady) { try { await dbPut('settings', { key: 'darkMode', value: appSettings.darkMode }); } catch(e) {} }
+  else { localStorage.setItem('darkMode', appSettings.darkMode); }
   showToast(appSettings.darkMode ? 'Night Mood' : 'Daylight Mode');
 });
 
 // ==================== DATA MANAGEMENT ====================
 async function exportData() {
   try {
-    var entries = await dbGetAll('entries');
-    var payments = await dbGetAll('payments');
-    var invoices = await dbGetAll('invoices');
+    var entries = cachedEntries;
+    var payments = cachedPayments;
+    var invoices = cachedInvoices;
     var data = { entries: entries, payments: payments, invoices: invoices, exportedAt: new Date().toISOString() };
     var blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     var url = URL.createObjectURL(blob);
@@ -1618,25 +1731,44 @@ function clearDatabase() {
 
 // ==================== INIT ====================
 async function initApp() {
-  try { await openDB(); } catch(err) { console.error('DB open error:', err); showToast('Database error: ' + err.message, 'error'); return; }
+  // Load settings from localStorage as fallback
+  var savedTheme = localStorage.getItem('theme');
+  var savedFont = localStorage.getItem('font');
+  var savedDarkMode = localStorage.getItem('darkMode');
+  var savedLastDate = localStorage.getItem('lastDate');
 
-  try {
-    var ts = await dbGet('settings', 'theme');
-    if (ts !== undefined && ts !== null) { appSettings.theme = ts.value; applyTheme(appSettings.theme); } else applyTheme(0);
-    var fs = await dbGet('settings', 'font');
-    if (fs !== undefined && fs !== null) { appSettings.font = fs.value; applyFont(appSettings.font); } else applyFont(0);
-    var ms = await dbGet('settings', 'darkMode');
-    if (ms !== undefined && ms !== null && ms.value === false) {
-      appSettings.darkMode = false;
-      document.body.classList.add('light-mode');
-      document.getElementById('modeToggle').checked = true;
-    }
-    var lds = await dbGet('settings', 'lastDate');
-    if (lds !== undefined && lds !== null && lds.value) { lastSelectedDate = lds.value; }
-  } catch(e) { applyTheme(0); applyFont(0); }
+  if (savedTheme !== null) appSettings.theme = parseInt(savedTheme);
+  if (savedFont !== null) appSettings.font = parseInt(savedFont);
+  if (savedDarkMode === 'false') appSettings.darkMode = false;
+  if (savedLastDate) lastSelectedDate = savedLastDate;
 
+  // If Firebase is ready, load settings from Firestore (overrides localStorage)
+  if (firebaseReady) {
+    try {
+      var ts = await dbGet('settings', 'theme');
+      if (ts && ts.value !== undefined) appSettings.theme = ts.value;
+      var fs = await dbGet('settings', 'font');
+      if (fs && fs.value !== undefined) appSettings.font = fs.value;
+      var ms = await dbGet('settings', 'darkMode');
+      if (ms && ms.value === false) appSettings.darkMode = false;
+    } catch(e) { console.log('Settings load error:', e); }
+  }
+
+  // Apply settings
+  applyTheme(appSettings.theme);
+  applyFont(appSettings.font);
+  if (!appSettings.darkMode) {
+    document.body.classList.add('light-mode');
+    document.getElementById('modeToggle').checked = true;
+  }
+
+  // Set up real-time listeners (keeps data in sync across devices)
+  setupRealtimeListeners();
+
+  // Initial render
   renderDashboard();
 
+  // Hide splash screen
   setTimeout(function() {
     var splash = document.getElementById('splash');
     splash.classList.add('hide');
@@ -1646,71 +1778,5 @@ async function initApp() {
 
 initApp();
 </script>
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-  import { getFirestore, collection, addDoc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-
-  const firebaseConfig = {
-    apiKey: "AIzaSyAJSo4ldJ7kWXhR--83iw1CjpcYu7KrFyI",
-    authDomain: "nadir-c9a51.firebaseapp.com",
-    projectId: "nadir-c9a51",
-    storageBucket: "nadir-c9a51.appspot.com",
-    messagingSenderId: "61998925156",
-    appId: "1:61998925156:web:3183df8fa6e9a34009a671"
-  };
-
-  const app = initializeApp(firebaseConfig);
-  const db = getFirestore(app);
-
-  // 1. DATA SUBMIT HOTI HI CLOUD PAR BHEJNA
-  // Aapke core functions ke sath override taaki naya entry direct save ho sake
-  const originalSaveData = window.saveDataToFirebase;
-  window.saveDataToFirebase = async function(entryData) {
-    if (typeof originalSaveData === "function") {
-      await originalSaveData(entryData);
-    }
-    // Live Cloud Push
-    try {
-      await addDoc(collection(db, "officeData"), {
-        content: entryData,
-        timestamp: new Date()
-      });
-      console.log("Cloud sync completed!");
-    } catch (e) {
-      console.error("Firebase Sync Error: ", e);
-    }
-  };
-
-  // 2. LIVE DATA LISTENER (MOBILE PAR BINA REFRESH SHOW KARNE KE LIYE)
-  const q = query(collection(db, "officeData"), orderBy("timestamp", "asc"));
-  onSnapshot(q, (snapshot) => {
-    let localKey = 'db_entries'; // Aapke software ki main storage key
-    let localData = JSON.parse(localStorage.getItem(localKey)) || [];
-    let isUpdated = false;
-
-    snapshot.docChanges().forEach((change) => {
-      if (change.type === "added") {
-        const cloudDoc = change.doc.data().content;
-        if (cloudDoc && cloudDoc.id) {
-          // Check karna ki entry pehle se local storage mein hai ya nahi
-          const exists = localData.some(item => item.id === cloudDoc.id);
-          if (!exists) {
-            localData.push(cloudDoc);
-            isUpdated = true;
-          }
-        }
-      }
-    });
-
-    if (isUpdated) {
-      localStorage.setItem(localKey, JSON.stringify(localData));
-      
-      // Screen refresh karne ke liye aapke system ke original functions ko fire karna
-      if (typeof updateDashboard === "function") updateDashboard();
-      if (typeof renderTable === "function") renderTable();
-      if (typeof updateOwnerList === "function") updateOwnerList();
-      console.log("New entry synced and screen refreshed dynamically!");
-    }
-  });
-</script></body>
+</body>
 </html>
