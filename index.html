@@ -1646,5 +1646,56 @@ async function initApp() {
 
 initApp();
 </script>
-</body>
+<script type="module">
+  // Firebase ki zaroori files import karein
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+  import { getFirestore, collection, addDoc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+  // Aapke project ki personal configuration (Jo aapne screenshot mein dikhayi thi)
+  const firebaseConfig = {
+    apiKey: "AIzaSyAJSo4ldJ7kWXhR--83iw1CjpcYu7KrFyI",
+    authDomain: "nadir-c9a51.firebaseapp.com",
+    projectId: "nadir-c9a51",
+    storageBucket: "nadir-c9a51.appspot.com",
+    messagingSenderId: "61998925156",
+    appId: "1:61998925156:web:3183df8fa6e9a34009a671"
+  };
+
+  // Firebase ko chalu karein
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  // --- 1. DATA SAVE KARNE KA FUNCTION ---
+  // Jab aap PC ya Mobile par entry submit karenge, to ye function data save karega
+  async function saveDataToFirebase(entryData) {
+    try {
+      await addDoc(collection(db, "officeData"), {
+        content: entryData,
+        timestamp: new Date()
+      });
+      console.log("Data save ho gaya!");
+    } catch (error) {
+      console.error("Error saving data: ", error);
+    }
+  }
+
+  // --- 2. LIVE DATA SHOW KARNE KA FUNCTION ---
+  // Ye function hamesha database par nazar rakhega. 
+  // Jaise hi PC par entry hogi, Mobile par khud-ba-khud show ho jayegi!
+  const q = query(collection(db, "officeData"), orderBy("timestamp", "desc"));
+  onSnapshot(q, (snapshot) => {
+    snapshot.docChanges().forEach((change) => {
+      if (change.type === "added") {
+        const newData = change.doc.data();
+        console.log("Nayi Entry Aayi Hai: ", newData.content);
+        
+        // TODO: Yahan aapka wo code aayega jo screen par data show karta hai
+        // updateScreen(newData.content); 
+      }
+    });
+  });
+
+  // Global access ke liye function ko window object mein daal dete hain
+  window.saveDataToFirebase = saveDataToFirebase;
+</script></body>
 </html>
