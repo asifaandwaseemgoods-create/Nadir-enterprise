@@ -1650,7 +1650,6 @@ initApp();
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
   import { getFirestore, collection, addDoc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-  // Aapki apni Firebase Config
   const firebaseConfig = {
     apiKey: "AIzaSyAJSo4ldJ7kWXhR--83iw1CjpcYu7KrFyI",
     authDomain: "nadir-c9a51.firebaseapp.com",
@@ -1663,59 +1662,54 @@ initApp();
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
 
-  // 1. DATA SAVE HO TE HI FIREBASE MEIN BHEJNA
-  // Jab bhi naya trip add hoga ya database change hoga, ye backup automatic bhejega
-  const originalSave = window.saveTripEntry || window.addTripEntry; 
-  if (originalSave) {
-    // Agar aapka koi custom save function hai to uske sath attach karein
-    const appFunction = typeof saveTripEntry === "function" ? "saveTripEntry" : "addTripEntry";
-    const oldFunc = window[appFunction];
-    window[appFunction] = async function(...args) {
-      if (typeof oldFunc === "function") oldFunc(...args);
-      
-      // LocalStorage se fresh data utha kar Firebase cloud par live sync karna
-      let currentData = JSON.parse(localStorage.getItem('transportData')) || JSON.parse(localStorage.getItem('db_entries')) || [];
-      if (currentData.length > 0) {
-        try {
-          await addDoc(collection(db, "officeData"), {
-            content: currentData[currentData.length - 1], // Last entry ko save karna
-            timestamp: new Date()
-          });
-          console.log("Firebase Backup Done!");
-        } catch (error) {
-          console.error("Firebase Sync Error: ", error);
-        }
-      }
-    };
-  }
+  // 1. DATA SUBMIT HOTI HI CLOUD PAR BHEJNA
+  // Aapke core functions ke sath override taaki naya entry direct save ho sake
+  const originalSaveData = window.saveDataToFirebase;
+  window.saveDataToFirebase = async function(entryData) {
+    if (typeof originalSaveData === "function") {
+      await originalSaveData(entryData);
+    }
+    // Live Cloud Push
+    try {
+      await addDoc(collection(db, "officeData"), {
+        content: entryData,
+        timestamp: new Date()
+      });
+      console.log("Cloud sync completed!");
+    } catch (e) {
+      console.error("Firebase Sync Error: ", e);
+    }
+  };
 
-  // 2. DOSRE PC YA MOBILE KA DATA AUTOMATICALLY UTTHANA (LIVE LISTENER)
+  // 2. LIVE DATA LISTENER (MOBILE PAR BINA REFRESH SHOW KARNE KE LIYE)
   const q = query(collection(db, "officeData"), orderBy("timestamp", "asc"));
   onSnapshot(q, (snapshot) => {
-    let updated = false;
-    let localKey = localStorage.getItem('transportData') ? 'transportData' : 'db_entries';
+    let localKey = 'db_entries'; // Aapke software ki main storage key
     let localData = JSON.parse(localStorage.getItem(localKey)) || [];
+    let isUpdated = false;
 
     snapshot.docChanges().forEach((change) => {
       if (change.type === "added") {
-        const fireData = change.doc.data().content;
-        if (fireData) {
-          // Check karein ke kya ye entry local database mein pehle se majood hai?
-          const exists = localData.some(item => JSON.stringify(item) === JSON.stringify(fireData));
+        const cloudDoc = change.doc.data().content;
+        if (cloudDoc && cloudDoc.id) {
+          // Check karna ki entry pehle se local storage mein hai ya nahi
+          const exists = localData.some(item => item.id === cloudDoc.id);
           if (!exists) {
-            localData.push(fireData);
-            updated = true;
+            localData.push(cloudDoc);
+            isUpdated = true;
           }
         }
       }
     });
 
-    if (updated) {
+    if (isUpdated) {
       localStorage.setItem(localKey, JSON.stringify(localData));
-      // Aapke table aur dashboard ko refresh karne ke liye agar function majood ho
-      if (typeof renderTable === "function") renderTable();
+      
+      // Screen refresh karne ke liye aapke system ke original functions ko fire karna
       if (typeof updateDashboard === "function") updateDashboard();
-      console.log("Database synced with other device!");
+      if (typeof renderTable === "function") renderTable();
+      if (typeof updateOwnerList === "function") updateOwnerList();
+      console.log("New entry synced and screen refreshed dynamically!");
     }
   });
 </script></body>
