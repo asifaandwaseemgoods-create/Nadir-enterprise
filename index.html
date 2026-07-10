@@ -70,6 +70,10 @@
             background-color: #dc3545;
             padding: 5px 10px;
             font-size: 12px;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
         }
         .delete-btn:hover {
             background-color: #c82333;
@@ -86,7 +90,7 @@
         <input type="text" id="description" placeholder="Description">
         <input type="number" id="credit" placeholder="Credit (Inflow)">
         <input type="number" id="debit" placeholder="Debit (Outflow)">
-        <button id="addBtn">Add Entry</button>
+        <button onclick="saveData()">Add Entry</button>
     </div>
 
     <table>
@@ -102,7 +106,18 @@
             </tr>
         </thead>
         <tbody id="ledgerBody">
-            </tbody>
+            <tr><td>1</td><td>2024-03-01</td><td>Opening Balance</td><td style="color: green;">50000</td><td style="color: red;">-</td><td style="font-weight: bold;">50000</td><td>-</td></tr>
+            <tr><td>2</td><td>2024-03-02</td><td>Office Rent</td><td style="color: green;">-</td><td style="color: red;">12000</td><td style="font-weight: bold;">38000</td><td>-</td></tr>
+            <tr><td>3</td><td>2024-03-03</td><td>Client Payment (Project A)</td><td style="color: green;">25000</td><td style="color: red;">-</td><td style="font-weight: bold;">63000</td><td>-</td></tr>
+            <tr><td>4</td><td>2024-03-05</td><td>Internet Bill</td><td style="color: green;">-</td><td style="color: red;">3500</td><td style="font-weight: bold;">59500</td><td>-</td></tr>
+            <tr><td>5</td><td>2024-03-07</td><td>Office Snacks & Tea</td><td style="color: green;">-</td><td style="color: red;">1500</td><td style="font-weight: bold;">58000</td><td>-</td></tr>
+            <tr><td>6</td><td>2024-03-10</td><td>Stationery Items</td><td style="color: green;">-</td><td style="color: red;">2200</td><td style="font-weight: bold;">55800</td><td>-</td></tr>
+            <tr><td>7</td><td>2024-03-12</td><td>Freelance Designer Advance</td><td style="color: green;">-</td><td style="color: red;">8000</td><td style="font-weight: bold;">47800</td><td>-</td></tr>
+            <tr><td>8</td><td>2024-03-15</td><td>Client Payment (Website)</td><td style="color: green;">40000</td><td style="color: red;">-</td><td style="font-weight: bold;">87800</td><td>-</td></tr>
+            <tr><td>9</td><td>2024-03-18</td><td>Electricity Bill</td><td style="color: green;">-</td><td style="color: red;">14500</td><td style="font-weight: bold;">73300</td><td>-</td></tr>
+            <tr><td>10</td><td>2024-03-20</td><td>New Office Chair</td><td style="color: green;">-</td><td style="color: red;">6500</td><td style="font-weight: bold;">66800</td><td>-</td></tr>
+            <tr><td>11</td><td>2024-03-22</td><td>Miscellaneous Income</td><td style="color: green;">3500</td><td style="color: red;">-</td><td style="font-weight: bold;">70300</td><td>-</td></tr>
+        </tbody>
     </table>
 </div>
 
@@ -110,7 +125,6 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-    // Aapki Firebase Configuration
     const firebaseConfig = {
         apiKey: "AIzaSyAJSo4ldJ7kWXhR--83iw1CjpcYu7KrFyI",
         authDomain: "nadir-c9a51.firebaseapp.com",
@@ -120,15 +134,22 @@
         appId: "1:61998925156:web:3183df8fa6e9a34009a671"
     };
 
-    // Firebase Initialize
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    // Aaj ki date auto-set karne ke liye
     document.getElementById('date').value = new Date().toISOString().split('T')[0];
 
-    // --- 1. DATA SAVE KARNA ---
-    document.getElementById('addBtn').addEventListener('click', async () => {
+    // Purana original hardcoded content pehle save kar lete hain calculate karne ke liye
+    const originalHTML = document.getElementById('ledgerBody').innerHTML;
+
+    // Original static values jo aapki list mein pehle se hain
+    const staticCredit = 50000 + 25000 + 40000 + 3500;
+    const staticDebit = 12000 + 3500 + 1500 + 2200 + 8000 + 14500 + 6500;
+    const staticInitialBalance = 70300;
+    const staticRowsCount = 11;
+
+    // SAVE DATA TO FIREBASE (Aapka dynamic saveData function)
+    window.saveData = async function() {
         const date = document.getElementById('date').value;
         const description = document.getElementById('description').value;
         const credit = parseFloat(document.getElementById('credit').value) || 0;
@@ -140,40 +161,39 @@
         }
 
         try {
-            // Firebase mein data save ho raha hai
-            await addDoc(collection(db, "ledger"), {
+            await addDoc(collection(db, "ledgerEntries"), {
                 date: date,
                 description: description,
                 credit: credit,
                 debit: debit,
-                timestamp: new Date() // Sahi tarteeb ke liye timestamp
+                timestamp: new Date()
             });
 
-            // Form clear karna
             document.getElementById('description').value = '';
             document.getElementById('credit').value = '';
             document.getElementById('debit').value = '';
         } catch (error) {
-            console.error("Error adding entry: ", error);
+            console.error("Error saving data: ", error);
         }
-    });
+    }
 
-    // --- 2. LIVE DATA SHOW KARNA (REAL-TIME UPDATE) ---
-    // Ye code hamesha database ko dekhta rahega, koi bhi device entry karega ye fauran screen update karega
-    const q = query(collection(db, "ledger"), orderBy("date", "asc"), orderBy("timestamp", "asc"));
-    
+    // REAL-TIME SYNC FROM FIREBASE
+    const q = query(collection(db, "ledgerEntries"), orderBy("date", "asc"), orderBy("timestamp", "asc"));
     onSnapshot(q, (snapshot) => {
         const ledgerBody = document.getElementById('ledgerBody');
-        ledgerBody.innerHTML = ''; // Purana view clear karein
+        
+        // Pehle static table wapas reset karein
+        ledgerBody.innerHTML = originalHTML;
 
-        let runningBalance = 0;
-        let totalCredit = 0;
-        let totalDebit = 0;
-        let sNo = 1;
+        let runningBalance = staticInitialBalance;
+        let totalCredit = staticCredit;
+        let totalDebit = staticDebit;
+        let sNo = staticRowsCount + 1;
 
+        // Firebase se naya data purane data ke aage jodte hain
         snapshot.forEach((docSnap) => {
             const data = docSnap.data();
-            const id = docSnap.id; // Har entry ki unique ID delete karne ke liye
+            const id = docSnap.id;
 
             runningBalance += (data.credit - data.debit);
             totalCredit += data.credit;
@@ -192,26 +212,23 @@
             ledgerBody.innerHTML += row;
         });
 
-        // Aakhir mein Total wali row add karna
-        if(snapshot.size > 0) {
-            const totalRow = `<tr class="total-row">
-                <td colspan="3" style="text-align: right;">Total / Net Balance:</td>
-                <td style="color: green;">${totalCredit}</td>
-                <td style="color: red;">${totalDebit}</td>
-                <td colspan="2" style="background-color: #28a745; color: white;">${runningBalance}</td>
-            </tr>`;
-            ledgerBody.innerHTML += totalRow;
-        }
+        // Aakhir mein total row add karein
+        const totalRow = `<tr class="total-row">
+            <td colspan="3" style="text-align: right;">Total / Net Balance:</td>
+            <td style="color: green;">${totalCredit}</td>
+            <td style="color: red;">${totalDebit}</td>
+            <td colspan="2" style="background-color: #28a745; color: white;">${runningBalance}</td>
+        </tr>`;
+        ledgerBody.innerHTML += totalRow;
 
-        // Delete buttons par click event lagana
-        const deleteButtons = document.querySelectorAll('.delete-btn');
-        deleteButtons.forEach(btn => {
-            btn.addEventListener('click', async (e) => {
+        // Delete button listener
+        document.querySelectorAll('.delete-btn').forEach(btn => {
+            btn.onclick = async (e) => {
                 const docId = e.target.getAttribute('data-id');
                 if(confirm("Kya aap ye entry delete karna chahte hain?")) {
-                    await deleteDoc(doc(db, "ledger", docId));
+                    await deleteDoc(doc(db, "ledgerEntries", docId));
                 }
-            });
+            }
         });
     });
 </script>
